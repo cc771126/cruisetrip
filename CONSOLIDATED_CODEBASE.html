@@ -133,18 +133,19 @@
     <ul class="index-list">
       <li><a href="#block_0">[1] package.json</a></li>
       <li><a href="#block_1">[2] vite.config.ts</a></li>
-      <li><a href="#block_2">[3] src/index.css</a></li>
-      <li><a href="#block_3">[4] src/types.ts</a></li>
-      <li><a href="#block_4">[5] src/firebase.ts</a></li>
-      <li><a href="#block_5">[6] src/data.ts</a></li>
-      <li><a href="#block_6">[7] src/hooks/useCollaborativeState.ts</a></li>
-      <li><a href="#block_7">[8] src/components/WeatherWidget.tsx</a></li>
-      <li><a href="#block_8">[9] src/components/ExpenseTracker.tsx</a></li>
-      <li><a href="#block_9">[10] src/components/ShoppingSection.tsx</a></li>
-      <li><a href="#block_10">[11] src/components/LocalTipsSection.tsx</a></li>
-      <li><a href="#block_11">[12] src/components/MemoSection.tsx</a></li>
-      <li><a href="#block_12">[13] src/components/ItineraryBuilder.tsx</a></li>
-      <li><a href="#block_13">[14] src/App.tsx</a></li>
+      <li><a href="#block_2">[3] .github/workflows/deploy.yml</a></li>
+      <li><a href="#block_3">[4] src/index.css</a></li>
+      <li><a href="#block_4">[5] src/types.ts</a></li>
+      <li><a href="#block_5">[6] src/firebase.ts</a></li>
+      <li><a href="#block_6">[7] src/data.ts</a></li>
+      <li><a href="#block_7">[8] src/hooks/useCollaborativeState.ts</a></li>
+      <li><a href="#block_8">[9] src/components/WeatherWidget.tsx</a></li>
+      <li><a href="#block_9">[10] src/components/ExpenseTracker.tsx</a></li>
+      <li><a href="#block_10">[11] src/components/ShoppingSection.tsx</a></li>
+      <li><a href="#block_11">[12] src/components/LocalTipsSection.tsx</a></li>
+      <li><a href="#block_12">[13] src/components/MemoSection.tsx</a></li>
+      <li><a href="#block_13">[14] src/components/ItineraryBuilder.tsx</a></li>
+      <li><a href="#block_14">[15] src/App.tsx</a></li>
     </ul>
   </div>
 
@@ -204,6 +205,7 @@ import {defineConfig} from &#039;vite&#039;;
 
 export default defineConfig(() =&gt; {
   return {
+    base: &#039;./&#039;, // Ensures relative asset paths so it works perfectly on GitHub Pages subdirectories!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -224,19 +226,85 @@ export default defineConfig(() =&gt; {
 
   <div class="file-block" id="block_2">
     <div class="file-header">
-      <span>📂 檔案位置: src/index.css</span>
+      <span>📂 檔案位置: .github/workflows/deploy.yml</span>
       <button class="copy-btn" onclick="copyText('file_code_2', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_2"><code>@import &quot;tailwindcss&quot;;
+    <pre id="file_code_2"><code># Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: [&quot;main&quot;]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: &quot;pages&quot;
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we&#039;re just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-size: &#039;20&#039;
+          cache: &#039;npm&#039;
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: &#039;./dist&#039;
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 </code></pre>
   </div>
 
   <div class="file-block" id="block_3">
     <div class="file-header">
-      <span>📂 檔案位置: src/types.ts</span>
+      <span>📂 檔案位置: src/index.css</span>
       <button class="copy-btn" onclick="copyText('file_code_3', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_3"><code>/**
+    <pre id="file_code_3"><code>@import &quot;tailwindcss&quot;;
+</code></pre>
+  </div>
+
+  <div class="file-block" id="block_4">
+    <div class="file-header">
+      <span>📂 檔案位置: src/types.ts</span>
+      <button class="copy-btn" onclick="copyText('file_code_4', this)">📋 複製此檔案代碼</button>
+    </div>
+    <pre id="file_code_4"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -329,12 +397,12 @@ export interface QAGroup {
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_4">
+  <div class="file-block" id="block_5">
     <div class="file-header">
       <span>📂 檔案位置: src/firebase.ts</span>
-      <button class="copy-btn" onclick="copyText('file_code_4', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_5', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_4"><code>/**
+    <pre id="file_code_5"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -386,12 +454,12 @@ export { firebaseApp, database, dbMode };
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_5">
+  <div class="file-block" id="block_6">
     <div class="file-header">
       <span>📂 檔案位置: src/data.ts</span>
-      <button class="copy-btn" onclick="copyText('file_code_5', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_6', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_5"><code>/**
+    <pre id="file_code_6"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1089,12 +1157,12 @@ export const LOCAL_TIPS = {
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_6">
+  <div class="file-block" id="block_7">
     <div class="file-header">
       <span>📂 檔案位置: src/hooks/useCollaborativeState.ts</span>
-      <button class="copy-btn" onclick="copyText('file_code_6', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_7', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_6"><code>/**
+    <pre id="file_code_7"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1654,12 +1722,12 @@ export function useCollaborativeState() {
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_7">
+  <div class="file-block" id="block_8">
     <div class="file-header">
       <span>📂 檔案位置: src/components/WeatherWidget.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_7', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_8', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_7"><code>/**
+    <pre id="file_code_8"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1812,12 +1880,12 @@ export default function WeatherWidget() {
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_8">
+  <div class="file-block" id="block_9">
     <div class="file-header">
       <span>📂 檔案位置: src/components/ExpenseTracker.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_8', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_9', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_8"><code>/**
+    <pre id="file_code_9"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2115,12 +2183,12 @@ export default function ExpenseTracker({ expenses, meName, addExpense, deleteExp
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_9">
+  <div class="file-block" id="block_10">
     <div class="file-header">
       <span>📂 檔案位置: src/components/ShoppingSection.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_9', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_10', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_9"><code>/**
+    <pre id="file_code_10"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2327,12 +2395,12 @@ export default function ShoppingSection({
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_10">
+  <div class="file-block" id="block_11">
     <div class="file-header">
       <span>📂 檔案位置: src/components/LocalTipsSection.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_10', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_11', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_10"><code>/**
+    <pre id="file_code_11"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2412,12 +2480,12 @@ export default function LocalTipsSection() {
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_11">
+  <div class="file-block" id="block_12">
     <div class="file-header">
       <span>📂 檔案位置: src/components/MemoSection.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_11', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_12', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_11"><code>/**
+    <pre id="file_code_12"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2582,12 +2650,12 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_12">
+  <div class="file-block" id="block_13">
     <div class="file-header">
       <span>📂 檔案位置: src/components/ItineraryBuilder.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_12', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_13', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_12"><code>/**
+    <pre id="file_code_13"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2919,12 +2987,12 @@ export default function ItineraryBuilder({ spotsSaseho, spotsBusan, updateSpot }
 </code></pre>
   </div>
 
-  <div class="file-block" id="block_13">
+  <div class="file-block" id="block_14">
     <div class="file-header">
       <span>📂 檔案位置: src/App.tsx</span>
-      <button class="copy-btn" onclick="copyText('file_code_13', this)">📋 複製此檔案代碼</button>
+      <button class="copy-btn" onclick="copyText('file_code_14', this)">📋 複製此檔案代碼</button>
     </div>
-    <pre id="file_code_13"><code>/**
+    <pre id="file_code_14"><code>/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */

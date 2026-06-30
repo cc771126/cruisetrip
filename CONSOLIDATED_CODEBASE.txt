@@ -1,6 +1,6 @@
 ========================================================================
    🚢  MSC 榮耀號郵輪行程討論協同網頁 - 完整專案原始碼單一文件存檔  🚢
-   產生時間: 2026/6/30 下午5:03:30
+   產生時間: 2026/6/30 下午5:12:37
 ========================================================================
 
 親愛的康匠夥伴您好！這份文件將整套 React + Firebase 協同網頁的所有核心程式碼，
@@ -9,18 +9,19 @@
 檔案清單與目錄索引：
 1. [package.json]
 2. [vite.config.ts]
-3. [src/index.css]
-4. [src/types.ts]
-5. [src/firebase.ts]
-6. [src/data.ts]
-7. [src/hooks/useCollaborativeState.ts]
-8. [src/components/WeatherWidget.tsx]
-9. [src/components/ExpenseTracker.tsx]
-10. [src/components/ShoppingSection.tsx]
-11. [src/components/LocalTipsSection.tsx]
-12. [src/components/MemoSection.tsx]
-13. [src/components/ItineraryBuilder.tsx]
-14. [src/App.tsx]
+3. [.github/workflows/deploy.yml]
+4. [src/index.css]
+5. [src/types.ts]
+6. [src/firebase.ts]
+7. [src/data.ts]
+8. [src/hooks/useCollaborativeState.ts]
+9. [src/components/WeatherWidget.tsx]
+10. [src/components/ExpenseTracker.tsx]
+11. [src/components/ShoppingSection.tsx]
+12. [src/components/LocalTipsSection.tsx]
+13. [src/components/MemoSection.tsx]
+14. [src/components/ItineraryBuilder.tsx]
+15. [src/App.tsx]
 
 ========================================================================
 
@@ -82,6 +83,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: './', // Ensures relative asset paths so it works perfectly on GitHub Pages subdirectories!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -100,6 +102,73 @@ export default defineConfig(() => {
 
 
 // --- 檔案 vite.config.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: .github/workflows/deploy.yml
+########################################################################
+
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-size: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+
+// --- 檔案 .github/workflows/deploy.yml 結束 ---
 
 
 ########################################################################
