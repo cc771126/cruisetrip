@@ -447,13 +447,14 @@ export function useCollaborativeState() {
   };
 
   // 3. MEMOS Actions
-  const addMemo = async (text: string) => {
+  const addMemo = async (text: string, images?: string[]) => {
     if (!me.name) return;
     const newMemo: Memo = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       author: me.name,
       text,
-      created: Date.now()
+      created: Date.now(),
+      images: images || []
     };
 
     const updated = [...memos, newMemo];
@@ -467,10 +468,10 @@ export function useCollaborativeState() {
     await saveState('memos', updated);
   };
 
-  const updateMemo = async (memoId: string, text: string) => {
+  const updateMemo = async (memoId: string, text: string, images?: string[]) => {
     const updated = memos.map((m) => {
       if (m.id === memoId) {
-        return { ...m, text };
+        return { ...m, text, images: images !== undefined ? images : m.images };
       }
       return m;
     });

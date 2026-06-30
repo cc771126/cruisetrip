@@ -92,7 +92,7 @@ export default function ExpenseTracker({ expenses, meName, addExpense, deleteExp
                   placeholder="例：佐世保漢堡 / 交通車資"
                   value={desc}
                   onChange={e => setDesc(e.target.value)}
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-800 font-bold"
                 />
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -104,7 +104,7 @@ export default function ExpenseTracker({ expenses, meName, addExpense, deleteExp
                     placeholder="金額"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
-                    className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white text-right font-mono font-bold"
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white text-right font-mono font-bold text-slate-800"
                   />
                 </div>
                 <div>
@@ -112,7 +112,7 @@ export default function ExpenseTracker({ expenses, meName, addExpense, deleteExp
                   <select
                     value={currency}
                     onChange={e => setCurrency(e.target.value as any)}
-                    className="w-full h-11 border border-slate-200 rounded-xl px-2 bg-slate-50 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white font-bold"
+                    className="w-full h-11 border border-slate-200 rounded-xl px-2 bg-slate-50 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white font-bold text-slate-800"
                   >
                     <option value="JPY">JPY (¥)</option>
                     <option value="KRW">KRW (₩)</option>

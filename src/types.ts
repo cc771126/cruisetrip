@@ -33,6 +33,7 @@ export interface Memo {
   author: string;
   text: string;
   created: number;
+  images?: string[]; // Array of base64 compressed images
 }
 
 export interface WishlistItem {

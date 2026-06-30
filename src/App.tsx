@@ -134,12 +134,90 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Dynamic active section scrolling tracking
+  useEffect(() => {
+    const handleScroll = () => {
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+      if (isAtBottom) {
+        setActiveSection('shopping-list');
+        return;
+      }
+
+      let currentCategory = 'overview';
+      const allTargets = [
+        { id: 'overview', cat: 'overview' },
+        { id: 'daily', cat: 'overview' },
+        { id: 'ship', cat: 'overview' },
+        { id: 'dining', cat: 'overview' },
+        { id: 'cost', cat: 'cost' },
+        { id: 'notes', cat: 'cost' },
+        { id: 'confirm', cat: 'cost' },
+        { id: 'discuss', cat: 'discuss' },
+        { id: 'itinerary-plan', cat: 'itinerary-plan' },
+        { id: 'shopping-list', cat: 'shopping-list' },
+        { id: 'local-tips', cat: 'shopping-list' },
+        { id: 'memo-board', cat: 'shopping-list' }
+      ];
+
+      for (const target of allTargets) {
+        const el = document.getElementById(target.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Offset of 180px gives a very smooth transition when a heading reaches near the top of the viewport
+          if (rect.top <= 180 && rect.bottom >= 120) {
+            currentCategory = target.cat;
+          }
+        }
+      }
+      
+      setActiveSection((prev) => {
+        if (prev !== currentCategory) {
+          return currentCategory;
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Call once to initialize
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Auto-scroll active nav button into view when activeSection changes
+  useEffect(() => {
+    const activeBtn = document.getElementById(`nav-btn-${activeSection}`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [activeSection]);
+
   // Smooth scroll spy helper
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveSection(id);
+      const catMap: { [key: string]: string } = {
+        'overview': 'overview',
+        'daily': 'overview',
+        'ship': 'overview',
+        'dining': 'overview',
+        'cost': 'cost',
+        'notes': 'cost',
+        'confirm': 'cost',
+        'discuss': 'discuss',
+        'itinerary-plan': 'itinerary-plan',
+        'shopping-list': 'shopping-list',
+        'local-tips': 'shopping-list',
+        'memo-board': 'shopping-list'
+      };
+      const cat = catMap[id] || 'overview';
+      setActiveSection(cat);
     }
   };
 
@@ -413,21 +491,15 @@ export default function App() {
         <div className="border-t border-sky-100/40 bg-white/95 backdrop-blur-sm py-2 px-4 overflow-x-auto flex items-center [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-sky-200/60 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-sky-300 scrollbar-thin scroll-smooth snap-x snap-mandatory">
           <div className="max-w-6xl mx-auto w-full flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:none">
             {[
-              { id: 'overview', label: '行程總覽' },
-              { id: 'daily', label: '每日行程' },
-              { id: 'ship', label: '郵輪亮點' },
-              { id: 'dining', label: '船上餐食' },
-              { id: 'cost', label: '費用估算' },
-              { id: 'notes', label: '注意事項' },
-              { id: 'confirm', label: '旅行社Q&A' },
-              { id: 'discuss', label: '討論區' },
-              { id: 'itinerary-plan', label: '終極排程' },
-              { id: 'shopping-list', label: '代購待買' },
-              { id: 'local-tips', label: '避坑叮嚀' },
-              { id: 'memo-board', label: '協同筆記' }
+              { id: 'overview', label: '🚢 郵輪與日程' },
+              { id: 'cost', label: '📋 自費與回條' },
+              { id: 'discuss', label: '💬 景點討論區' },
+              { id: 'itinerary-plan', label: '⏰ 時間路線規劃' },
+              { id: 'shopping-list', label: '🛒 採購與筆記' }
             ].map((section) => (
               <button
                 key={section.id}
+                id={`nav-btn-${section.id}`}
                 onClick={() => scrollToSection(section.id)}
                 className={`text-[11px] sm:text-xs font-extrabold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
                   activeSection === section.id
@@ -1248,7 +1320,7 @@ export default function App() {
                     value={checklistNameInput}
                     onChange={e => setChecklistNameInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && saveName(checklistNameInput)}
-                    className="flex-1 sm:w-40 bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-850 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="flex-1 sm:w-40 bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
                     onClick={() => saveName(checklistNameInput)}
@@ -1515,7 +1587,7 @@ export default function App() {
                         placeholder="例：九十九島展望台 / 札嘎其海鮮"
                         value={spotName}
                         onChange={e => setSpotName(e.target.value)}
-                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-800"
                       />
                     </div>
                     <div>
@@ -1525,7 +1597,7 @@ export default function App() {
                         placeholder="例：¥1,500 / 自理"
                         value={spotCost}
                         onChange={e => setSpotCost(e.target.value)}
-                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-800"
                       />
                     </div>
                   </div>
@@ -1559,7 +1631,7 @@ export default function App() {
                       placeholder="跟朋友說說為什麼想去吧！這裡沒有字數限制，歡迎寫下詳細的計畫、想買的口味或是推薦菜單 ✍️"
                       value={spotNote}
                       onChange={e => setSpotNote(e.target.value)}
-                      className="w-full h-20 border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white resize-none"
+                      className="w-full h-20 border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white resize-none text-slate-800"
                     />
                   </div>
 
@@ -1571,7 +1643,7 @@ export default function App() {
                       placeholder="貼上 Google Maps 地標分享連結..."
                       value={spotMap}
                       onChange={e => setSpotMap(e.target.value)}
-                      className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                      className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-800"
                     />
                   </div>
 
@@ -1723,7 +1795,7 @@ export default function App() {
                                   value={editingSpotNote}
                                   onChange={e => setEditingSpotNote(e.target.value)}
                                   placeholder="景點備註理由（無字數限制）"
-                                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold text-slate-800"
                                   rows={3}
                                 />
                                 <div className="grid grid-cols-2 gap-2">
@@ -1732,14 +1804,14 @@ export default function App() {
                                     value={editingSpotCost}
                                     onChange={e => setEditingSpotCost(e.target.value)}
                                     placeholder="預估花費"
-                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold text-slate-800"
                                   />
                                   <input
                                     type="text"
                                     value={editingSpotMap}
                                     onChange={e => setEditingSpotMap(e.target.value)}
                                     placeholder="地圖地標連結"
-                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold text-slate-800"
                                   />
                                 </div>
 
