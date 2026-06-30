@@ -185,14 +185,20 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-scroll active nav button into view when activeSection changes
+  // Auto-scroll active nav button into view when activeSection changes (Horizontal only - avoids scrollIntoView conflicts!)
   useEffect(() => {
+    const container = document.getElementById('nav-buttons-container');
     const activeBtn = document.getElementById(`nav-btn-${activeSection}`);
-    if (activeBtn) {
-      activeBtn.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
+    if (container && activeBtn) {
+      const containerRect = container.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      const currentScrollLeft = container.scrollLeft;
+      const btnRelativeLeft = btnRect.left - containerRect.left;
+      const targetScrollLeft = currentScrollLeft + btnRelativeLeft - (containerRect.width / 2) + (btnRect.width / 2);
+      
+      container.scrollTo({
+        left: targetScrollLeft,
+        behavior: 'smooth'
       });
     }
   }, [activeSection]);
@@ -489,7 +495,7 @@ export default function App() {
 
         {/* Unified Scrollable Anchor Bar (Visible on both desktop & mobile with sleek custom scrollbar!) */}
         <div className="border-t border-sky-100/40 bg-white/95 backdrop-blur-sm py-2 px-4 overflow-x-auto flex items-center [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-sky-200/60 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-sky-300 scrollbar-thin scroll-smooth snap-x snap-mandatory">
-          <div className="max-w-6xl mx-auto w-full flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:none">
+          <div id="nav-buttons-container" className="max-w-6xl mx-auto w-full flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:none">
             {[
               { id: 'overview', label: '🚢 郵輪與日程' },
               { id: 'cost', label: '📋 自費與回條' },
@@ -610,7 +616,7 @@ export default function App() {
       </header>
 
       {/* ===== SECTION: OVERVIEW / TIMELINE ===== */}
-      <section id="overview" className="max-w-6xl mx-auto py-16 px-4">
+      <section id="overview" className="max-w-6xl mx-auto py-16 px-4 scroll-mt-20">
         <div className="space-y-2 mb-10 text-center sm:text-left">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
             <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Itinerary 行程總覽
@@ -654,7 +660,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: DAILY ACCORDIONS ===== */}
-      <section id="daily" className="bg-slate-100/50 border-y border-slate-200/50 py-16 px-4">
+      <section id="daily" className="bg-slate-100/50 border-y border-slate-200/50 py-16 px-4 scroll-mt-20">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center sm:text-left space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
@@ -744,7 +750,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: SHIP HIGHLIGHTS ===== */}
-      <section id="ship" className="max-w-6xl mx-auto py-16 px-4">
+      <section id="ship" className="max-w-6xl mx-auto py-16 px-4 scroll-mt-20">
         <div className="space-y-2 mb-10 text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
             <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> On Board 郵輪亮點
@@ -778,7 +784,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: DINING ===== */}
-      <section id="dining" className="bg-slate-100/50 border-t border-slate-200 py-16 px-4">
+      <section id="dining" className="bg-slate-100/50 border-t border-slate-200 py-16 px-4 scroll-mt-20">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
@@ -816,7 +822,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: BUDGET ESTIMATOR ===== */}
-      <section id="cost" className="max-w-6xl mx-auto py-16 px-4 space-y-8">
+      <section id="cost" className="max-w-6xl mx-auto py-16 px-4 space-y-8 scroll-mt-20">
         <div className="space-y-2 text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
             <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Budget 費用與預算估算
@@ -1252,7 +1258,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: PRECAUTIONS / NOTES ===== */}
-      <section id="notes" className="bg-slate-100/50 border-y border-slate-200 py-16 px-4">
+      <section id="notes" className="bg-slate-100/50 border-y border-slate-200 py-16 px-4 scroll-mt-20">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center sm:text-left space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
@@ -1405,7 +1411,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: CONFIRM Q&A ===== */}
-      <section id="confirm" className="max-w-4xl mx-auto py-16 px-4 space-y-8">
+      <section id="confirm" className="max-w-4xl mx-auto py-16 px-4 space-y-8 scroll-mt-20">
         <div className="text-center sm:text-left space-y-2">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
             <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Ask the Agency 報名前 Q&A
@@ -1463,7 +1469,7 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: DISCUSSION FORUM (THE MAIN CORE BLOCK) ===== */}
-      <section id="discuss" className="bg-indigo-950 text-white py-16 px-4 border-t border-slate-800">
+      <section id="discuss" className="bg-indigo-950 text-white py-16 px-4 border-t border-slate-800 scroll-mt-20">
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="bg-gradient-to-r from-indigo-900 to-indigo-850 rounded-3xl p-6 sm:p-8 border border-white/10 relative overflow-hidden shadow-2xl">
             <div className="absolute right-[-10px] bottom-[-20px] text-[130px] opacity-5 select-none pointer-events-none">🗺️</div>
@@ -1488,7 +1494,7 @@ export default function App() {
                       value={nameInput}
                       onChange={e => setNameInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && saveName(nameInput)}
-                      className="flex-1 h-11 bg-white text-slate-900 placeholder:text-slate-400 font-extrabold text-sm px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="flex-1 h-11 !bg-white !text-slate-900 placeholder:text-slate-400 font-extrabold text-sm px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                     <button
                       onClick={() => saveName(nameInput)}

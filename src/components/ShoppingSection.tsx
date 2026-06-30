@@ -238,7 +238,7 @@ export default function ShoppingSection({
               value={customItem}
               onChange={e => setCustomItem(e.target.value)}
               disabled={!meName}
-              className="flex-1 h-10 border border-slate-200 rounded-xl px-3 bg-white text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+              className="flex-1 h-10 border border-slate-200 rounded-xl px-3 bg-white text-xs font-bold !text-slate-800 !bg-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <button
               type="submit"

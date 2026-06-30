@@ -158,7 +158,7 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
                     <textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
-                      className="w-full text-xs p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none h-24 font-bold text-slate-800 placeholder:text-slate-400"
+                      className="w-full text-xs p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-y h-36 font-bold !text-slate-800 !bg-white placeholder:text-slate-400 focus:ring-1 focus:ring-indigo-500"
                       placeholder="修改您的備忘筆記..."
                     />
                     
@@ -286,7 +286,7 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
               placeholder="在此輸入備忘、房間號碼、WiFi 帳密、訂位代號、交通票券、或領隊與集合重要資訊... ✍️"
               value={newMemo}
               onChange={(e) => setNewMemo(e.target.value)}
-              className="w-full h-24 border border-slate-200 rounded-xl p-3 bg-white text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full h-36 border border-slate-200 rounded-xl p-3 bg-white text-xs font-bold !text-slate-800 !bg-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 resize-y focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
