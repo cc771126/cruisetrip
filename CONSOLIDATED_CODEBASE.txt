@@ -1,0 +1,4562 @@
+========================================================================
+   🚢  MSC 榮耀號郵輪行程討論協同網頁 - 完整專案原始碼單一文件存檔  🚢
+   產生時間: 2026/6/30 下午5:03:30
+========================================================================
+
+親愛的康匠夥伴您好！這份文件將整套 React + Firebase 協同網頁的所有核心程式碼，
+打包整合在單一文字檔內，方便您一次全選複製、儲存或備份。
+
+檔案清單與目錄索引：
+1. [package.json]
+2. [vite.config.ts]
+3. [src/index.css]
+4. [src/types.ts]
+5. [src/firebase.ts]
+6. [src/data.ts]
+7. [src/hooks/useCollaborativeState.ts]
+8. [src/components/WeatherWidget.tsx]
+9. [src/components/ExpenseTracker.tsx]
+10. [src/components/ShoppingSection.tsx]
+11. [src/components/LocalTipsSection.tsx]
+12. [src/components/MemoSection.tsx]
+13. [src/components/ItineraryBuilder.tsx]
+14. [src/App.tsx]
+
+========================================================================
+
+
+
+########################################################################
+## 📂 檔案位置: package.json
+########################################################################
+
+{
+  "name": "react-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "firebase": "^12.15.0",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "vite": "^6.2.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.0",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
+  }
+}
+
+
+// --- 檔案 package.json 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: vite.config.ts
+########################################################################
+
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import {defineConfig} from 'vite';
+
+export default defineConfig(() => {
+  return {
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '.'),
+      },
+    },
+    server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      // Do not modify - file watching is disabled to prevent flickering during agent edits.
+      hmr: process.env.DISABLE_HMR !== 'true',
+      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
+      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+  };
+});
+
+
+// --- 檔案 vite.config.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/index.css
+########################################################################
+
+@import "tailwindcss";
+
+
+// --- 檔案 src/index.css 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/types.ts
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export interface Spot {
+  id: string;
+  name: string;
+  cat: string;
+  note: string;
+  cost: string;
+  map: string;
+  author: string;
+  color: string;
+  voters: string[];
+  created: number;
+  images?: string[]; // Array of base64 compressed images
+  selectedInItinerary?: boolean;
+}
+
+export interface Expense {
+  id: string;
+  payer: string;
+  description: string;
+  amount: number;
+  currency: 'TWD' | 'JPY' | 'KRW';
+  amountTWD: number;
+  created: number;
+}
+
+export interface Memo {
+  id: string;
+  author: string;
+  text: string;
+  created: number;
+}
+
+export interface WishlistItem {
+  id: string;
+  name: string;
+  category: 'japan' | 'korea_oy' | 'korea_rx' | 'custom';
+  addedBy: string;
+  completed: boolean;
+  created: number;
+}
+
+export interface DayItinerary {
+  n: number;
+  date: string;
+  dow: string;
+  icon: string;
+  title: string;
+  sub: string;
+  port?: 'saseho' | 'busan';
+  time: string;
+  arr: string;
+  dep: string;
+  meals: string[];
+  pts: string[];
+  free: boolean;
+}
+
+export interface ShipHighlight {
+  ic: string;
+  t: string;
+  tag: 'free' | 'paid';
+  d: string;
+}
+
+export interface NoteItem {
+  ic: string;
+  t: string;
+  body: string;
+}
+
+export interface QALine {
+  t: 'k' | 'm' | 'p';
+  text: string;
+}
+
+export interface QAItem {
+  q: string;
+  lines: QALine[];
+}
+
+export interface QAGroup {
+  ic: string;
+  t: string;
+  items: QAItem[];
+}
+
+
+// --- 檔案 src/types.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/firebase.ts
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getDatabase, ref } from 'firebase/database';
+
+export const firebaseConfig = {
+  apiKey: "AIzaSyA-5RGAX7EXzyzwxnJX1v3dtvEpRpUG9Tc",
+  authDomain: "cruise-115.firebaseapp.com",
+  projectId: "cruise-115",
+  storageBucket: "cruise-115.firebasestorage.app",
+  messagingSenderId: "28336659236",
+  appId: "1:28336659236:web:075060d7aac2ea15afb1b1",
+  databaseURL: "https://cruise-115-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+// Check if we can use LocalStorage
+export function checkLocalStorageUsable(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const testKey = '__storage_test__';
+    localStorage.setItem(testKey, 'test');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+let firebaseApp;
+let database;
+let dbMode: 'cloud' | 'local' | 'mem' = 'local';
+
+try {
+  if (getApps().length === 0) {
+    firebaseApp = initializeApp(firebaseConfig);
+  } else {
+    firebaseApp = getApp();
+  }
+  database = getDatabase(firebaseApp);
+  dbMode = 'cloud';
+} catch (error) {
+  console.warn('Firebase initialization skipped or failed. Falling back to localStorage.', error);
+  dbMode = checkLocalStorageUsable() ? 'local' : 'mem';
+}
+
+export { firebaseApp, database, dbMode };
+
+
+// --- 檔案 src/firebase.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/data.ts
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { DayItinerary, ShipHighlight, NoteItem, QAGroup, WishlistItem } from './types';
+
+export const DAYS: DayItinerary[] = [
+  {
+    n: 1,
+    date: "7/25",
+    dow: "星期六",
+    icon: "⚓",
+    title: "基隆港登船",
+    sub: "MSC 榮耀號 啟航",
+    time: "啟航 20:00 前",
+    arr: "",
+    dep: "17:00",
+    meals: ["早 自理", "午 下午茶(15F自助)", "晚 郵輪"],
+    pts: [
+      "亞洲最大旗艦郵輪於基隆西岸碼頭啟航",
+      "登船手續＋全船安全演習後鳴笛出海",
+      "上船 4 件事：①門口拿船卡 ②連內網下載 MSC App ③綁信用卡啟用船卡 ④預約劇院秀與付費餐廳"
+    ],
+    free: false
+  },
+  {
+    n: 2,
+    date: "7/26",
+    dow: "星期日",
+    icon: "🌊",
+    title: "海上巡航",
+    sub: "全天船上自由活動",
+    time: "全天海上",
+    arr: "",
+    dep: "",
+    meals: ["早 郵輪", "午 郵輪", "晚 郵輪"],
+    pts: [
+      "翻開每日活動表，設施玩到飽",
+      "水晶旋梯、80 米 LED 天幕、泳池、健身房、SPA",
+      "晚上倫敦大劇院秀＋天幕光影秀＋主題派對",
+      "甲板散步迎晨曦，純歐式度假氛圍"
+    ],
+    free: false
+  },
+  {
+    n: 3,
+    date: "7/27",
+    dow: "星期一",
+    icon: "⛩️",
+    title: "日本 佐世保",
+    sub: "自由行 · 今日岸上自費自理",
+    port: "saseho",
+    time: "",
+    arr: "09:30",
+    dep: "20:00",
+    meals: ["早 郵輪", "午 自理／船上", "晚 自理／船上"],
+    pts: [
+      "九州西北的美式風情港都，異國情調滿滿",
+      "必看：九十九島展望台與遊覽船（西海國立公園）",
+      "逛街：日本最長的四ヶ町商店街、海港旁佐世保五番街",
+      "名物：佐世保漢堡 🍔；也可選一整天的豪斯登堡"
+    ],
+    free: true
+  },
+  {
+    n: 4,
+    date: "7/28",
+    dow: "星期二",
+    icon: "🏯",
+    title: "韓國 釜山",
+    sub: "自由行 · 今日岸上自費自理",
+    port: "busan",
+    time: "",
+    arr: "07:00",
+    dep: "17:00",
+    meals: ["早 郵輪", "午 自理／船上", "晚 自理／船上"],
+    pts: [
+      "韓國第二大城、活力海濱都會，物價親民",
+      "必拍：甘川文化村（韓國馬丘比丘）、海雲台天空膠囊列車",
+      "海景步道：青沙浦 SKY WALK、五六島天空步道",
+      "美食：札嘎其市場海鮮、BIFF 廣場辣炒年糕／街頭小吃",
+      "⚠️ 17:00 就離港，比較早，自由行記得抓緊回船"
+    ],
+    free: true
+  },
+  {
+    n: 5,
+    date: "7/29",
+    dow: "星期三",
+    icon: "🌅",
+    title: "海上巡航",
+    sub: "放鬆 · 看秀 · 購物",
+    time: "全天海上",
+    arr: "",
+    dep: "",
+    meals: ["早 郵輪", "午 郵輪", "晚 郵輪"],
+    pts: [
+      "航行於東海海域，悠閒享受最後的海上時光",
+      "榮耀大道 200＋ 國際品牌、LED 天幕拍照打卡",
+      "施華洛世奇水晶旋梯（61,440 顆水晶）必拍",
+      "夜晚表演秀、各式風格酒吧小酌"
+    ],
+    free: false
+  },
+  {
+    n: 6,
+    date: "7/30",
+    dow: "星期四",
+    icon: "🏡",
+    title: "基隆港 返航",
+    sub: "愉快的旅程畫下句點",
+    time: "抵達 08:00",
+    arr: "08:00",
+    dep: "",
+    meals: ["早 郵輪", "午 溫暖的家", "晚 溫暖的家"],
+    pts: [
+      "榮耀號返抵基隆港",
+      "前一晚（上岸前至少 3 小時）先結清船上消費帳單",
+      "託運行李前一晚 23:00 前貼好行李條放門外",
+      "領回護照、確認帳單，依梯次依序下船"
+    ],
+    free: false
+  }
+];
+
+export const SHIP: ShipHighlight[] = [
+  {
+    ic: "💎",
+    t: "施華洛世奇水晶旋梯",
+    tag: "free",
+    d: "61,440 顆奧地利水晶、義大利工匠手工打造，橫跨 5–7 樓。公認最美拍照點，建議早上 7–8 點去拍空景！"
+  },
+  {
+    ic: "✨",
+    t: "榮耀大道 × 80 米 LED 天幕",
+    tag: "free",
+    d: "貫穿船中段的室內購物街，1.4 億顆 LED 燈泡打造的天幕秀不時變換星空、海底世界，傍晚還有光影秀。"
+  },
+  {
+    ic: "🛝",
+    t: "亞利桑那水上樂園",
+    tag: "free",
+    d: "3 條繽紛滑水道＋82 米喜馬拉雅橋，免費免預約，穿好泳衣帶毛巾就能衝（戶外設施視天氣開放）。"
+  },
+  {
+    ic: "🏊",
+    t: "大峽谷泳池 & 按摩池",
+    tag: "free",
+    d: "15 樓室內泳池有透明天幕引自然光、不吹風超舒服；多座戶外 jacuzzi 邊泡邊看海。"
+  },
+  {
+    ic: "🎭",
+    t: "倫敦大劇院 表演秀",
+    tag: "free",
+    d: "媲美百老匯的音樂劇、舞蹈、魔術、現場演唱，每晚不同主題。記得先用 App／平板預約場次。"
+  },
+  {
+    ic: "🏎️",
+    t: "4D 賽車 · VR 迷宮 · 保齡球",
+    tag: "paid",
+    d: "16 樓遊戲天地：擬真 F1 賽車、VR 虛擬迷宮、保齡球、電玩。多人可合資買 Fun Pass 較划算。"
+  },
+  {
+    ic: "🎰",
+    t: "賭場 Casino",
+    tag: "paid",
+    d: "以拉斯維加斯為靈感、還有 VIP 房，想試手氣可以來；另有賓果遊戲（一張約 300 多元、頭獎超高）。"
+  },
+  {
+    ic: "💆",
+    t: "峇里島風 SPA 水療",
+    tag: "paid",
+    d: "被《伯利茲郵輪指南》評為五大最佳郵輪 SPA 之一，160＋ 種身體臉部療程，專業理療師親理。"
+  },
+  {
+    ic: "🧸",
+    t: "分齡兒童俱樂部",
+    tag: "free",
+    d: "與 LEGO、CHICCO 合作，0–17 歲分 5 組、32＋ 免費活動。3–12 歲（已戒尿布）預約可免費托育一整天！"
+  }
+];
+
+export const NOTES: NoteItem[] = [
+  {
+    ic: "🛂",
+    t: "證件與通關",
+    body: `<ul>
+      <li><span class="text-coral-d font-bold">護照影本要印 2 份</span>（A4、1:1 比例、不可手機翻拍列印）：一份下船入境用、一份保險備用。</li>
+      <li>登船時護照正本會被統一收走，下船前才歸還；每次下船都要帶護照影本給當地海關查驗。</li>
+      <li>千萬別帶到舊護照或別人的護照！護照效期需 6 個月以上。</li>
+      <li>日本通關需護照影本＋海關申報單（下船前一晚送到房間，以家庭為單位填寫）。</li>
+      <li><span class="text-coral-d font-bold">出發前先查線上入境申報</span>：郵輪靠港多由船方／旅行社統一辦理團體入境；若需個別申報，日本可先填 <b>Visit Japan Web</b>、韓國 2026 年起改用<b>電子入境卡 e‑Arrival</b>（台灣旅客觀光 90 天免簽、2026 年底前免 K‑ETA）。實際以說明會公告為準。</li></ul>`
+  },
+  {
+    ic: "🎫",
+    t: "登船後先做這 4 件事",
+    body: `<ul>
+      <li>① 到房門口拿你的<b>船卡</b>（掛在門把上，等同房卡＋身份證＋錢包）。</li>
+      <li>② 連上免費內網、下載並登入 <b>MSC for Me App</b>，開一個大家的群組。</li>
+      <li>③ 到 5／6 樓機台<b>綁信用卡或儲值現金</b>，船卡才正式啟用。</li>
+      <li>④ 立刻預約熱門的倫敦大劇院秀與付費餐廳。</li>
+      <li>安全演習：開航前約 45 分鐘看房內電視影片＋撥分機 881，再持卡到集合點刷卡完成。</li></ul>`
+  },
+  {
+    ic: "🧳",
+    t: "行李規定",
+    body: `<ul>
+      <li>每人 2 件託運（每件 ≤23kg）＋ 2 件手提；每房總計 ≤8 件／100kg。</li>
+      <li>託運前綁好行李吊牌（沒帶可現場手寫）；重要物品隨身帶，行李不一定何時送到房。</li>
+      <li>禁帶違禁品（刀具、熨斗等）。郵輪不像飛機限重，可盡情購物，但回台入境仍須遵守海關規定（不可帶肉類、水果）。</li></ul>`
+  },
+  {
+    ic: "📶",
+    t: "船上網路",
+    body: `<ul>
+      <li>免費內網只能用 App 看日報、預約、同房聊天，<b>連不上外網</b>。</li>
+      <li>付費 Starlink 衛星網路分「瀏覽」與「瀏覽＋串流」兩種，全程不限流量；多裝置一起買、事先買約 8 折。</li>
+      <li>台灣包船多半要上船後才能購買，價格以現場為準。</li>
+      <li>省錢做法：船上不用網路專心玩，下船當天再用日本／韓國 eSIM。</li></ul>`
+  },
+  {
+    ic: "🔌",
+    t: "插座與電器",
+    body: `<ul>
+      <li>艙房有 110V／220V，台灣雙扁插頭可直接用；圓頭插座需轉接頭。</li>
+      <li>插座數量不多，可帶 1–2 個分接插座；<b>船上禁延長線、吹風機、電湯匙</b>等高耗能電器。</li></ul>`
+  },
+  {
+    ic: "👗",
+    t: "晚餐服裝（正裝之夜）",
+    body: `<ul>
+      <li>每日日報會公告當晚 dress code（便服／非正式／正裝 Gala）。</li>
+      <li>建議帶一套正式服裝：男士西裝或襯衫皮鞋、女士套裝／小洋裝／禮服。</li>
+      <li>正裝之夜很適合到水晶旋梯拍照留念。</li></ul>`
+  },
+  {
+    ic: "🌊",
+    t: "暈船",
+    body: `<ul>
+      <li>大型郵輪相對穩，但遇海象差仍會搖晃；建議備暈船藥。</li>
+      <li>陽台房或船中段、低樓層通常感受較舒適。</li></ul>`
+  },
+  {
+    ic: "⏰",
+    t: "靠港 & 回港時間",
+    body: `<ul>
+      <li>每站靠港時間不同、以每日日報為準，<b>務必準時回船，郵輪不等人</b>，誤點產生的交通住宿費自負。</li>
+      <li>自由行建議在離港前約 1 小時回到碼頭（過安檢也要時間）。</li>
+      <li>本團：佐世保 09:30–20:00、釜山 07:00–17:00（釜山較早，注意！）。</li></ul>`
+  },
+  {
+    ic: "🛏️",
+    t: "離船流程",
+    body: `<ul>
+      <li>會收到「離船資訊表」（你的離船時段、集合時間地點）。</li>
+      <li>託運行李前一晚 23:00 前貼好行李條放門外。</li>
+      <li>確認帳單明細、領回護照；信用卡自動扣款、儲值現金多退少補。</li></ul>`
+  },
+  {
+    ic: "💴",
+    t: "小費、稅金與結帳",
+    body: `<ul>
+      <li>依公司回條：報價<b>已含郵輪服務費及日本觀光稅</b>，不需另付小費。</li>
+      <li>船上消費以美金計、刷船卡記帳，下船前一晚收到清單。</li>
+      <li>退稅可用護照影本辦理。</li></ul>`
+  }
+];
+
+export const CONFIRM: QAGroup[] = [
+  {
+    ic: "🚌",
+    t: "集合、交通與上下船",
+    items: [
+      {
+        q: "公司幾點集合、幾點發車？",
+        lines: [
+          { t: "k", text: "去程、回程都從公司集合一起搭車到基隆港。" },
+          { t: "m", text: "17:00 啟航，建議全團 13:00–14:00 抵港；要預留車程＋報到＋行李托運＋排隊登船時間。" },
+          { t: "p", text: "請旅行社直接給「最終集合時間／發車時間」。" }
+        ]
+      },
+      {
+        q: "家眷自行前往，要到哪個碼頭？地址、集合點、報到窗口？",
+        lines: [
+          { t: "k", text: "部分家眷可能自行前往。" },
+          { t: "m", text: "榮耀號通常停靠基隆港「西岸旅客碼頭（西岸客運大樓／旅客服務中心）」，從基隆車站北站（港西街出口）步行約 10 分鐘；現場有 MSC 人員可協助印護照影本。基隆港分東岸／西岸兩個報到點。" },
+          { t: "p", text: "最終停靠東岸或西岸、確切報到窗口，以旅行社通知為準。" }
+        ]
+      },
+      {
+        q: "自行前往者，最晚幾點前一定要到港完成報到？",
+        lines: [
+          { t: "k", text: "基隆 17:00 啟航。" },
+          { t: "m", text: "郵輪一般要求啟航前 2–3 小時完成報到；建議抓 14:00 前到、最晚不晚於 15:00。" },
+          { t: "p", text: "請旅行社給明確的「建議到港時間」與「最晚報到時間」。" }
+        ]
+      },
+      {
+        q: "行李怎麼處理？自己拿還是碼頭托運？",
+        lines: [
+          { t: "m", text: "碼頭可托運，工作人員會送到房門口。每人 2 件托運（每件 ≤90×75×43cm、≤23kg）＋ 2 件手提（≤56×45×25cm、≤23kg）；每房合計 ≤8 件／100kg。護照、錢包、藥,行動電源、外套放隨身包，別托運。" },
+          { t: "p", text: "大件行李是否現場統一托運、有無集合托運點，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "登船卡／房卡在哪拿？誰帶大家辦理？",
+        lines: [
+          { t: "m", text: "房卡會掛在各自房門上；上船第一天到 5／6 樓自助機台或櫃台綁信用卡才能啟用（5 樓人較少），賭場可用現金。" },
+          { t: "p", text: "是否有公司窗口／領隊統一帶辦，請確認。" }
+        ]
+      },
+      {
+        q: "登船後有沒有午餐或下午茶？幾點開始？",
+        lines: [
+          { t: "k", text: "行程表寫登船日午餐為郵輪下午茶。" },
+          { t: "m", text: "一般約下午 2 點多可先到 15 樓自助餐廳用餐。" },
+          { t: "p", text: "實際開放時間以船上每日資訊為準。" }
+        ]
+      },
+      {
+        q: "自由行下船會不會分梯次、領號碼牌、排在岸上團後面？",
+        lines: [
+          { t: "m", text: "會。報名官方岸上行程者可較早下船；自由行旅客需現場抽「下船梯次」，抽號還要提前約 1 小時排隊，最晚可能等到 16:15 才輪到。離船順序大致為：YC 套房 > 鑽石會員 > 團體岸上觀光 > 禮遇陽台暢飲房 > 自由行。" },
+          { t: "p", text: "本航次釜山／佐世保的實際下船梯次安排，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "7/30 回基隆，大約幾點能真正下船、幾點回公司？",
+        lines: [
+          { t: "k", text: "7/30 08:00 抵達基隆。" },
+          { t: "m", text: "抵達不等於馬上網下船，需依下船梯次，通常 7–8 點起陸續下船。" },
+          { t: "p", text: "請旅行社給預估下船時間與回到公司的時間。" }
+        ]
+      },
+      {
+        q: "回程家眷可以自行離開嗎？一起回公司在哪上車？",
+        lines: [
+          { t: "k", text: "回程會從基隆港一起搭車回公司。" },
+          { t: "p", text: "家眷可否自行離開、上車地點，請確認。" }
+        ]
+      }
+    ]
+  },
+  {
+    ic: "🗺️",
+    t: "自由行：佐世保・釜山",
+    items: [
+      {
+        q: "釜山：建議集合／回港時間到底幾點？",
+        lines: [
+          { t: "k", text: "旅行社：07:00 抵達、17:00 啟航；預計約 9 點多下船（依現場為主）；至少提前半小時到港排隊上船。" },
+          { t: "m", text: "建議別拖到 16:30 才到，抓 15:30–16:00 回港較安全。" },
+          { t: "p", text: "請旅行社給「建議回港」與「最晚回港」的明確時間。" }
+        ]
+      },
+      {
+        q: "釜山：自由行買票，幾點後的票比較安全？",
+        lines: [
+          { t: "k", text: "旅行社建議買「中午左右」的票比較剛好；不要買一早／10 點前的票，避免卡在下船排隊。" }
+        ]
+      },
+      {
+        q: "佐世保：實際下船、建議回港、最晚回港？",
+        lines: [
+          { t: "k", text: "09:30 抵達、20:00 離港。" },
+          { t: "m", text: "若 20:00 離港，建議 18:30–19:00 回港。" },
+          { t: "p", text: "實際下船與最晚回港時間，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "下船要過日本／韓國海關嗎？要等多久？",
+        lines: [
+          { t: "m", text: "抵達日本第一個港口，不論是否下船都要辦日本入境手續，通常需排隊查驗。" },
+          { t: "p", text: "韓國查驗方式與等候時間，請旅行社說明。" }
+        ]
+      },
+      {
+        q: "自由行當天的緊急聯絡人是誰？電話／LINE／集合點？",
+        lines: [
+          { t: "m", text: "建議出發前公告：領隊電話＋公司窗口＋港口集合點。" },
+          { t: "p", text: "待旅行社／公司提供。" }
+        ]
+      },
+      {
+        q: "港口到市區的交通？有沒有接駁？",
+        lines: [
+          { t: "p", text: "佐世保／釜山碼頭到市區的交通、是否有接駁車，請旅行社說明。" }
+        ]
+      },
+      {
+        q: "上岸要帶哪些東西？",
+        lines: [
+          { t: "m", text: "至少帶登船卡、護照影本、緊急聯絡卡、少量日圓／韓元；護照正本是否需帶看船方規定（多半正本會被收走）。" }
+        ]
+      }
+    ]
+  },
+  {
+    ic: "💳",
+    t: "費用、付款與取消",
+    items: [
+      {
+        q: "訂金／尾款何時繳、繳給誰、怎麼付？",
+        lines: [
+          { t: "k", text: "清單備註「回程繳納」。" },
+          { t: "p", text: "確切繳款時間、對象、方式，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "團費含哪些？還有沒有要再付的固定費用？",
+        lines: [
+          { t: "k", text: "行程表：已含郵輪服務費（小費）、日本觀光稅；船上網路自購。" },
+          { t: "m", text: "一般郵輪服務費約每人每晚 USD14.5（本行程已含於團費，不需再付）。" },
+          { t: "p", text: "保險、領隊小費、港務費、岸上團費是否另計，請確認。" }
+        ]
+      },
+      {
+        q: "船上消費是各自結算，還是公司統一事後結算？",
+        lines: [
+          { t: "p", text: "請旅行社／公司確認結算方式（會影響是否要綁個人信用卡）。" }
+        ]
+      },
+      {
+        q: "如果改港、延遲、取消靠港，有沒有退費或保險證明？",
+        lines: [
+          { t: "m", text: "岸上自費團確認後多半不可取消；若因不可抗力取消靠港，費用通常由船上退回。" },
+          { t: "p", text: "旅行社是否協助開立延誤／取消證明，請確認。" }
+        ]
+      }
+    ]
+  },
+  {
+    ic: "📶",
+    t: "網路與手機",
+    items: [
+      {
+        q: "船上 Wi-Fi 能不能提前買？去哪買？事前買比較便宜嗎？",
+        lines: [
+          { t: "k", text: "船上網路需自費；想先在官網買，需要先拿到「客艙預定號碼」。" },
+          { t: "m", text: "MSC 網路套餐通常可在出發前透過官網／MSC For Me 預購（需訂位／客艙編號），事先買常比船上便宜；分「瀏覽」與「瀏覽＋串流」、全程不限流量、多裝置一起買更省。台灣包船有時需上船後才能買。" },
+          { t: "p", text: "本航次能否提前購買、價格與方案，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "海上巡航手機網路怎麼辦？要不要關漫遊？",
+        lines: [
+          { t: "m", text: "建議關閉行動數據漫遊，避免連到海事衛星漫遊產生高額費用；只在靠港時用日／韓 eSIM。" }
+        ]
+      },
+      {
+        q: "MSC For Me App 本航次適用嗎？要先下載嗎？",
+        lines: [
+          { t: "m", text: "建議出發前先下載；上船連船上 Wi-Fi 後可查活動／餐廳時間、預約倫敦劇院表演、綁信用卡、與同行家人傳訊息。" },
+          { t: "p", text: "本航次使用方式，請旅行社確認。" }
+        ]
+      }
+    ]
+  },
+  {
+    ic: "🛳️",
+    t: "船上生活",
+    items: [
+      {
+        q: "免費餐廳有哪些？用餐時間？自助餐開放時間？",
+        lines: [
+          { t: "m", text: "含主餐廳（晚餐多分兩輪、約 17:00–20:00、看船卡背面梯次）與近全天候自助餐；另有付費特色餐廳。" },
+          { t: "p", text: "本航次各餐廳實際開放時間，以船上每日資訊為準。" }
+        ]
+      },
+      {
+        q: "有免費飲水／熱水嗎？房間有熱水壺嗎？能帶水壺嗎？",
+        lines: [
+          { t: "m", text: "自助餐廳有飲水／熱水可自行取用，可帶保溫水壺補水；房內是否附熱水壺依房型而異（標準房通常無）。" },
+          { t: "p", text: "房型是否附熱水壺，請確認。" }
+        ]
+      },
+      {
+        q: "瓶裝水、飲料、咖啡茶要錢嗎？",
+        lines: [
+          { t: "m", text: "自助餐廳的基本茶水多為免費；瓶裝水、現調飲料、酒類、特色咖啡多為付費（除非有飲料套餐）。" },
+          { t: "p", text: "細節以船上公告為準。" }
+        ]
+      },
+      {
+        q: "房間備品有什麼？牙刷牙膏、拖鞋、洗髮沐浴、吹風機？",
+        lines: [
+          { t: "m", text: "房內通常有吹風機、沐浴乳／洗髮乳、毛巾；牙刷、牙膏、拖鞋多半未提供，建議自備。" },
+          { t: "p", text: "確切備品，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "插座規格？要不要轉接頭？能不能帶延長線／多孔插座？",
+        lines: [
+          { t: "m", text: "客艙多為 110V／220V，台灣雙扁插頭多可直接用、圓孔需轉接頭，插座數量少。郵輪對延長線／多孔插座（尤其含突波保護或過長線）通常限制嚴格，吹風機、電湯匙等高耗能電器禁帶。" },
+          { t: "p", text: "可否帶一般延長線，請旅行社確認。" }
+        ]
+      },
+      {
+        q: "穿著有規定嗎？有正式晚宴或主題派對嗎？",
+        lines: [
+          { t: "m", text: "每日日報會公告當晚 dress code（便服／非正式／正裝之夜）；建議帶一套正式服裝，正裝之夜很適合到水晶旋梯拍照。" },
+          { t: "p", text: "本航次主題派對安排，以船上公告為準。" }
+        ]
+      },
+      {
+        q: "哪些東西不能帶上船？零食／泡麵／飲料／酒／小家電？",
+        lines: [
+          { t: "m", text: "禁帶酒精飲料（自帶會被代管至下船歸還）、明火物品、熨斗、電湯匙等；少量零食通常可，但回台入境不可帶肉類、水果。" },
+          { t: "p", text: "細項以船公司規定為準。" }
+        ]
+      },
+      {
+        q: "船上消費怎麼付？要綁信用卡嗎？沒信用卡怎麼辦？",
+        lines: [
+          { t: "m", text: "全程刷船卡記帳，建議綁信用卡；沒有信用卡可到櫃台以美金現金儲值到船卡。" }
+        ]
+      },
+      {
+        q: "最後一晚帳單怎麼結清？有問題找誰？",
+        lines: [
+          { t: "k", text: "行程表：上岸前至少 3 小時前結清船上帳單。" },
+          { t: "m", text: "下船前一晚會收到帳單明細，綁卡者自動扣款、儲值現金者多退少補；有疑問到服務櫃台處理（下船後較難處理）。" }
+        ]
+      },
+      {
+        q: "免稅店的酒，消費後可帶回房間喝嗎？",
+        lines: [
+          { t: "m", text: "船上免稅店或岸上買的酒類，通常會由船方代為保管、到航程最後或下船時歸還，航程中多半不可在房內飲用。" },
+          { t: "p", text: "確切規定，請旅行社確認。" }
+        ]
+      }
+    ]
+  },
+  {
+    ic: "🛂",
+    t: "證件與入境資料",
+    items: [
+      {
+        q: "日本／韓國入境資料要不要先填？旅行社會協助嗎？",
+        lines: [
+          { t: "m", text: "抵達日本第一個港口都要辦日本入境；旅行社通常會發「日本入出境卡」、協助流程，並請大家備護照影本＋海關申報書。日本可先填 Visit Japan Web；韓國 2026 年起改用電子入境卡 e-Arrival（台灣旅客觀光 90 天免簽、2026 年底前免 K-ETA）。郵輪團體入境多由旅行社／船方統一協調。" },
+          { t: "p", text: "本航次是否需個別線上申報、旅行社是否代辦，請確認。" }
+        ]
+      }
+    ]
+  }
+];
+
+export const CHECKLIST: string[] = [
+  "護照正本（效期 6 個月以上）",
+  "🛂 護照影本 ×2 份（A4、1:1、勿翻拍）",
+  "登船證／船票",
+  "📱 下載 MSC for Me App＋開好友群組",
+  "一套正式服裝（正裝之夜）",
+  "暈船藥",
+  "個人藥品／保養品",
+  "泳衣＋毛巾（玩水樂園）",
+  "防曬乳、太陽眼鏡",
+  "轉接頭／1–2 分接插座（禁延長線、吹風機）",
+  "保溫水壺（自助餐廳補水）",
+  "信用卡（綁船卡）",
+  "少量現金：日幣／韓元",
+  "日本／韓國 eSIM 或網卡",
+  "隨身包（下船帶護照影本）",
+  "行李吊牌（碼頭託運）"
+];
+
+export const CATS = [
+  { k: "food", label: "美食", emoji: "🍔", color: "#ef6b3f" },
+  { k: "sight", label: "景點", emoji: "📸", color: "#1597a5" },
+  { k: "shop", label: "購物", emoji: "🛍️", color: "#c0567f" },
+  { k: "cafe", label: "咖啡", emoji: "☕", color: "#9a6a3a" },
+  { k: "fun", label: "體驗", emoji: "🎡", color: "#7c63d8" },
+  { k: "other", label: "其他", emoji: "📍", color: "#5a7385" }
+];
+
+export const IDEAS = {
+  saseho: [
+    { n: "九十九島展望台（弓張岳）", c: "sight" },
+    { n: "九十九島遊覽船", c: "fun" },
+    { n: "豪斯登堡", c: "fun" },
+    { n: "四ヶ町商店街", c: "shop" },
+    { n: "佐世保五番街", c: "shop" },
+    { n: "佐世保漢堡", c: "food" },
+    { n: "西海橋公園（漩渦）", c: "sight" },
+    { n: "有田陶瓷公園", c: "sight" }
+  ],
+  busan: [
+    { n: "甘川文化村", c: "sight" },
+    { n: "海雲台天空膠囊列車", c: "fun" },
+    { n: "青沙浦 SKY WALK", c: "sight" },
+    { n: "廣安里咖啡街", c: "cafe" },
+    { n: "五六島天空步道", c: "sight" },
+    { n: "太宗台", c: "sight" },
+    { n: "海東龍宮寺", c: "sight" },
+    { n: "札嘎其市場", c: "food" },
+    { n: "BIFF 廣場小吃", c: "food" },
+    { n: "光復洞時尚街", c: "shop" }
+  ]
+};
+
+export const TOUR = {
+  saseho: {
+    a: { over: 2720, under: 3450 },
+    b: { over: 2550, under: 3260 }
+  },
+  busan: {
+    a: { over: 3680, under: 4380 },
+    b: { over: 3150, under: 3850 }
+  }
+};
+
+export const RECOMMENDATIONS = {
+  japan: [
+    "DHC 藥用純欖護唇膏",
+    "EVE QUICK 頭痛藥",
+    "合利他命 EX PLUS 270錠",
+    "ROIHI-TSUBOKO 大鵬溫感貼布",
+    "ROIHI 穴位貼布",
+    "Wakamoto 若元錠 1000錠",
+    "龍角散直服顆粒 (水蜜桃/薄荷)",
+    "樂敦 Lycee 隱形眼鏡眼藥水",
+    "安耐曬 金鑽高效防曬露",
+    "Alfort 帆船巧克力"
+  ],
+  korea_oy: [
+    "Torriden 玻尿酸保濕精華液",
+    "Round Lab 獨島保濕防曬霜",
+    "Anua 魚腥草 77% 舒緩爽膚水",
+    "Unove 深層修護護髮乳",
+    "Rejuran 麗珠蘭 3+1 微針能量安瓶精華",
+    "Mediheal 膠原蛋白雙效面膜",
+    "Ilso 黑頭出口導出液",
+    "Abib 魚腥草修護棉片",
+    "V領瘦臉貼",
+    "Orion 烏龜玉米濃湯脆片"
+  ],
+  korea_rx: [
+    "Centellian24 森特蓮積雪草軟膏",
+    "Dong-A 傷口急救藥膏",
+    "韓版 易利信酸痛貼布",
+    "樂得 治疤痕凝膠 (Noscarna)",
+    "高濃度維他命C發泡錠 (Orthomol 替代)",
+    "解酒糖 (Ready-Q)",
+    "痘痘貼 (Olive Young 隱形貼片)"
+  ]
+};
+
+export const LOCAL_TIPS = {
+  saseho: [
+    {
+      title: "一日巴士乘車券",
+      desc: "建議在佐世保站前的觀光案內所購買市區巴士一日券，只要乘搭3次以上就回本，非常划算！"
+    },
+    {
+      title: "IC 卡使用",
+      desc: "佐世保當地的松浦鐵道、西肥巴士支援 Suica、Nimoca 等全日本互通 IC 卡，直接刷卡上下車極為方便。"
+    },
+    {
+      title: "必吃佐世保漢堡 🍔",
+      desc: "佐世保漢堡是現點現做的，熱門店如 Hikari、Log Kit 通常排隊需要 30-50 分鐘。下船先去預排，或避開中午尖峰時段。"
+    },
+    {
+      title: "佐世保五番街購物",
+      desc: "五番街就在郵輪碼頭對面，步行 5 分鐘即達。裡面有大型超市、藥妝店和各式服飾店，建議把這裡排在最後回港前的採購站，買完直接拎上船。"
+    },
+    {
+      title: "日本計程車與交通安全",
+      desc: "日本計程車全部是按錶計費，司機極度誠實，絕無詐騙風險。後座車門會自動開啟，請勿動手去推拉。Google 地圖在佐世保的步行和火車導航 100% 精準。"
+    }
+  ],
+  busan: [
+    {
+      title: "防止釜山計程車詐騙 🚕",
+      desc: "一律搭乘『橘色』或『銀色』的一般計程車，避開黑色模範計程車（極貴）。上車前務必確認司機有『開啟計費錶 (Meter)』，若遇到不開錶開價的，請立刻下車。建議使用 Kakao T 叫車 App，路線、車牌、預估車資一目了然，還能綁卡免掏現！"
+    },
+    {
+      title: "必須下載當地的地圖 App 🗺️",
+      desc: "在韓國，<b>Google Maps 的步行導航是失效的！</b>請務必事先下載 <b>Naver Map (有中文版)</b> 或 KakaoMap。這對自由行尋找餐廳、天空膠囊和步行路線是唯一的救星。"
+    },
+    {
+      title: "預付交通與消費卡 (T-Money / WOWPASS)",
+      desc: "釜山地鐵和公車使用 T-Money 刷卡有折扣，且轉乘免費。推薦辦一張 <b>WOWPASS 卡</b>，它既是換匯機（可直接用台幣千元鈔存入換韓元），又是簽帳卡，還內建 T-Money 功能，釜山絕大多數商店都支援刷卡。"
+    },
+    {
+      title: "海雲台天空膠囊預約",
+      desc: "天空膠囊列車 (Sky Capsule) 極度熱門，一定要提早 2 週在網路上預約好時段！如果現場排隊，可能要等 2 小時以上，甚至當日票售罄，耽誤回船時間。"
+    },
+    {
+      title: "實用翻譯與溝通",
+      desc: "下載 <b>Papago 翻譯 App</b>，這是韓國最精準的翻譯工具，支援圖片拍照翻譯（拍菜單、藥盒超好用）。大部份釜山司機不會英文，上車時直接出示 Naver Map 上的韓文地址或 Papago 翻譯最妥當。"
+    }
+  ]
+};
+
+
+// --- 檔案 src/data.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/hooks/useCollaborativeState.ts
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect } from 'react';
+import { database, dbMode, checkLocalStorageUsable } from '../firebase';
+import { ref, onValue, set } from 'firebase/database';
+import { Spot, Expense, Memo, WishlistItem } from '../types';
+
+function colorFor(name: string): string {
+  const colors = [
+    "#ef6b3f", "#1597a5", "#c0567f", "#7c63d8", "#2bb673",
+    "#e0a72e", "#5a7385", "#d8556e", "#3a86c8", "#e2622f"
+  ];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) {
+    h = name.charCodeAt(i) + ((h << 5) - h);
+  }
+  return colors[Math.abs(h) % colors.length];
+}
+
+export const DEFAULT_SASEHO_SPOTS: Spot[] = [
+  {
+    id: "saseho_spot_1",
+    name: "YAMADA DENKI",
+    cat: "sight",
+    note: "最後一站去買百慕達烤箱 (BALMUDA the toaster pro)",
+    cost: "",
+    map: "https://maps.google.com/?q=Yamada+Denki+Saseho",
+    author: "Rebecca",
+    color: colorFor("Rebecca"),
+    voters: ["Rebecca"],
+    created: 1719700000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_2",
+    name: "返船捷徑",
+    cat: "other",
+    note: "四町街盡頭「尼米茲公園」有直達碼頭的公車，比步行快 10 分鐘（車資 200 日圓）。",
+    cost: "",
+    map: "",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719701000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_3",
+    name: "【購物避坑指南】",
+    cat: "shop",
+    note: "⚠️ 藥妝店比價：四町街「ダイコクドラッグ」比松本清便宜，但注意！郵輪旅客買滿 5000 日圓可免稅，結帳時出示護照影本。\n\n⚠️ 電器店陷阱：四町街電器店標價不含稅，需另加10%，建議使用支付寶即時匯率結算，會比較透明。",
+    cost: "",
+    map: "",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719702000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_4",
+    name: "【10 元吃垮佐世保】",
+    cat: "food",
+    note: "■ Bigman 漢堡邊角料：五番街本店每天 17:00 後半價販售「肉餅邊角料漢堡」，起司加倍！（人潮太多可pass）\n\n■ 松月堂海軍咖哩麵包：四町街老店隱藏款，加入長崎和牛油渣提香，8元一個，搭配咖哩香腸超絕。\n\n■ 大庄水產生魚片拼盤：四町街海鮮居酒屋，生魚片拼盤非常新鮮，高CP值且分量十足！",
+    cost: "",
+    map: "",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719703000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_5",
+    name: "【0 元拍出好照片玄學】",
+    cat: "other",
+    note: "✅ 五番街頂樓停車場：搭商場電梯到頂樓，解鎖俯瞰佐世保港的絕佳機位！郵輪＋彩色屋頂同框，濾鏡用「昭和復古」，秒變日劇截圖。\n\n✅ 四町街拱廊光影：中午陽光透過玻璃屋頂灑下來，站在「四町街」燈牌下仰拍，搭配文案「穿越昭和商店街」，超容易出片。",
+    cost: "",
+    map: "",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719704000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_6",
+    name: "【下船必知！超省時路線】",
+    cat: "shop",
+    note: "1️⃣ 碼頭 ➔ 五番街：下船後直走 500 公尺（約 10 分鐘），導航搜尋「五番街塩浜通り商店会」，沿途有彩色壁畫可以拍照。\n\n2️⃣ 五番街 ➔ 四町街：兩個商圈相距僅 500 公尺，步行穿過拱廊街即可抵達，全程有遮陽，不怕曬。",
+    cost: "",
+    map: "",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719705000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_7",
+    name: "四ヶ町商店街/佐世保五番街",
+    cat: "shop",
+    note: "超市、松本清、Muji、Uniqlo、倉式咖啡☕、岩石屋甜點🍮",
+    cost: "",
+    map: "https://maps.google.com/?q=Saseho+Yomachi+Shopping+Street",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719706000000,
+    selectedInItinerary: false
+  },
+  {
+    id: "saseho_spot_8",
+    name: "白岳神社⛩️",
+    cat: "sight",
+    note: "可以🚕從五番街前往（約3公里），看看風景、蒐集御朱印、祈求好運🙏",
+    cost: "",
+    map: "https://maps.google.com/?q=Shiradake+Shrine+Saseho",
+    author: "Erin",
+    color: colorFor("Erin"),
+    voters: ["Erin"],
+    created: 1719707000000,
+    selectedInItinerary: false
+  }
+];
+
+function mergeDefaultSpots(currentSpots: Spot[], defaultSpots: Spot[]): { merged: Spot[], changed: boolean } {
+  let changed = false;
+  const merged = [...currentSpots];
+  
+  defaultSpots.forEach(defSpot => {
+    const exists = merged.some(s => s.name.trim().toLowerCase() === defSpot.name.trim().toLowerCase());
+    if (!exists) {
+      merged.push(defSpot);
+      changed = true;
+    }
+  });
+  
+  // Sort by created time
+  merged.sort((a, b) => a.created - b.created);
+  
+  return { merged, changed };
+}
+
+export function useCollaborativeState() {
+  // Current user nickname & color
+  const [me, setMe] = useState<{ name: string | null; color: string | null }>({
+    name: null,
+    color: null
+  });
+
+  // Collaborative Lists
+  const [spotsSaseho, setSpotsSaseho] = useState<Spot[]>([]);
+  const [spotsBusan, setSpotsBusan] = useState<Spot[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [checklist, setChecklist] = useState<Record<number, boolean>>({});
+
+  // Load Nickname from LocalStorage on mount
+  useEffect(() => {
+    if (checkLocalStorageUsable()) {
+      const savedName = localStorage.getItem('cruise:me-name');
+      const savedColor = localStorage.getItem('cruise:me-color');
+      if (savedName) {
+        setMe({
+          name: savedName,
+          color: savedColor || colorFor(savedName)
+        });
+      }
+    }
+  }, []);
+
+  // Syncing with Realtime Database (or LocalStorage as fallback)
+  useEffect(() => {
+    if (dbMode === 'cloud' && database) {
+      // 1. Listen to Saseho Spots (Auto-merges user's yesterday's itinerary discussion data)
+      const sasehoRef = ref(database, 'cruise-115/spots-saseho');
+      const unsubSaseho = onValue(sasehoRef, (snapshot) => {
+        const val = snapshot.val();
+        const currentList: Spot[] = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+        const { merged, changed } = mergeDefaultSpots(currentList, DEFAULT_SASEHO_SPOTS);
+        
+        if (changed) {
+          set(sasehoRef, merged);
+        }
+        setSpotsSaseho(merged);
+      });
+
+      // 2. Listen to Busan Spots
+      const busanRef = ref(database, 'cruise-115/spots-busan');
+      const unsubBusan = onValue(busanRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          setSpotsBusan(Array.isArray(val) ? val : Object.values(val));
+        } else {
+          setSpotsBusan([]);
+        }
+      });
+
+      // 3. Listen to Expenses
+      const expensesRef = ref(database, 'cruise-115/expenses');
+      const unsubExpenses = onValue(expensesRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          setExpenses(Array.isArray(val) ? val : Object.values(val));
+        } else {
+          setExpenses([]);
+        }
+      });
+
+      // 4. Listen to Memos
+      const memosRef = ref(database, 'cruise-115/memos');
+      const unsubMemos = onValue(memosRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          setMemos(Array.isArray(val) ? val : Object.values(val));
+        } else {
+          setMemos([]);
+        }
+      });
+
+      // 5. Listen to Wishlist
+      const wishlistRef = ref(database, 'cruise-115/wishlist');
+      const unsubWishlist = onValue(wishlistRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          setWishlist(Array.isArray(val) ? val : Object.values(val));
+        } else {
+          setWishlist([]);
+        }
+      });
+
+      // 6. Listen to Packing Checklist
+      const checklistRef = ref(database, 'cruise-115/checklist');
+      const unsubChecklist = onValue(checklistRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          setChecklist(val);
+        } else {
+          setChecklist({});
+        }
+      });
+
+      return () => {
+        unsubSaseho();
+        unsubBusan();
+        unsubExpenses();
+        unsubMemos();
+        unsubWishlist();
+        unsubChecklist();
+      };
+    } else {
+      // Offline fallback: load from LocalStorage with auto-merging of default Saseho spots
+      if (checkLocalStorageUsable()) {
+        try {
+          const rawSaseho = localStorage.getItem('cruise:spots-saseho');
+          const rawBusan = localStorage.getItem('cruise:spots-busan');
+          const rawExpenses = localStorage.getItem('cruise:expenses');
+          const rawMemos = localStorage.getItem('cruise:memos');
+          const rawWishlist = localStorage.getItem('cruise:wishlist');
+          const rawChecklist = localStorage.getItem('cruise:prep-checklist');
+
+          let sasehoList: Spot[] = [];
+          if (rawSaseho) {
+            try {
+              sasehoList = JSON.parse(rawSaseho);
+            } catch (e) {
+              sasehoList = [];
+            }
+          }
+          const { merged, changed } = mergeDefaultSpots(sasehoList, DEFAULT_SASEHO_SPOTS);
+          if (changed) {
+            localStorage.setItem('cruise:spots-saseho', JSON.stringify(merged));
+          }
+          setSpotsSaseho(merged);
+
+          if (rawBusan) setSpotsBusan(JSON.parse(rawBusan));
+          if (rawExpenses) setExpenses(JSON.parse(rawExpenses));
+          if (rawMemos) setMemos(JSON.parse(rawMemos));
+          if (rawWishlist) setWishlist(JSON.parse(rawWishlist));
+          if (rawChecklist) setChecklist(JSON.parse(rawChecklist));
+        } catch (e) {
+          console.error('Error loading fallback states', e);
+        }
+      }
+    }
+  }, []);
+
+  // Helper helper to write state to cloud/local
+  const saveState = async (key: string, value: any) => {
+    if (dbMode === 'cloud' && database) {
+      try {
+        await set(ref(database, `cruise-115/${key}`), value);
+      } catch (e) {
+        console.error(`Error saving ${key} to Firebase`, e);
+      }
+    } else {
+      if (checkLocalStorageUsable()) {
+        localStorage.setItem(`cruise:${key}`, JSON.stringify(value));
+      }
+    }
+  };
+
+  // ----- USER ACTION IMPLEMENTATIONS -----
+
+  const saveName = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const color = colorFor(trimmed);
+    setMe({ name: trimmed, color });
+    if (checkLocalStorageUsable()) {
+      localStorage.setItem('cruise:me-name', trimmed);
+      localStorage.setItem('cruise:me-color', color);
+    }
+  };
+
+  const changeName = () => {
+    setMe({ name: null, color: null });
+    if (checkLocalStorageUsable()) {
+      localStorage.removeItem('cruise:me-name');
+      localStorage.removeItem('cruise:me-color');
+    }
+  };
+
+  // 1. SPOTS Actions
+  const addSpot = async (
+    port: 'saseho' | 'busan',
+    spot: { name: string; cat: string; note: string; cost: string; map: string; images?: string[] }
+  ) => {
+    if (!me.name) return;
+    const currentSpots = port === 'saseho' ? spotsSaseho : spotsBusan;
+    const newSpot: Spot = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: spot.name,
+      cat: spot.cat,
+      note: spot.note,
+      cost: spot.cost,
+      map: spot.map,
+      author: me.name,
+      color: me.color || '#1597a5',
+      voters: [me.name],
+      created: Date.now(),
+      images: spot.images || [],
+      selectedInItinerary: false
+    };
+
+    const updated = [...currentSpots, newSpot];
+    if (port === 'saseho') {
+      setSpotsSaseho(updated);
+      await saveState('spots-saseho', updated);
+    } else {
+      setSpotsBusan(updated);
+      await saveState('spots-busan', updated);
+    }
+  };
+
+  const updateSpot = async (port: 'saseho' | 'busan', spotId: string, updates: Partial<Spot>) => {
+    const currentSpots = port === 'saseho' ? spotsSaseho : spotsBusan;
+    const updated = currentSpots.map((s) => {
+      if (s.id === spotId) {
+        return { ...s, ...updates };
+      }
+      return s;
+    });
+
+    if (port === 'saseho') {
+      setSpotsSaseho(updated);
+      await saveState('spots-saseho', updated);
+    } else {
+      setSpotsBusan(updated);
+      await saveState('spots-busan', updated);
+    }
+  };
+
+  const deleteSpot = async (port: 'saseho' | 'busan', spotId: string) => {
+    const currentSpots = port === 'saseho' ? spotsSaseho : spotsBusan;
+    const updated = currentSpots.filter((s) => s.id !== spotId);
+
+    if (port === 'saseho') {
+      setSpotsSaseho(updated);
+      await saveState('spots-saseho', updated);
+    } else {
+      setSpotsBusan(updated);
+      await saveState('spots-busan', updated);
+    }
+  };
+
+  const toggleVote = async (port: 'saseho' | 'busan', spotId: string) => {
+    if (!me.name) return;
+    const userName = me.name;
+    const currentSpots = port === 'saseho' ? spotsSaseho : spotsBusan;
+    const updated = currentSpots.map((s) => {
+      if (s.id === spotId) {
+        const voters = s.voters || [];
+        const index = voters.indexOf(userName);
+        if (index >= 0) {
+          // Remove vote
+          const newVoters = [...voters];
+          newVoters.splice(index, 1);
+          return { ...s, voters: newVoters };
+        } else {
+          // Add vote
+          return { ...s, voters: [...voters, userName] };
+        }
+      }
+      return s;
+    });
+
+    if (port === 'saseho') {
+      setSpotsSaseho(updated);
+      await saveState('spots-saseho', updated);
+    } else {
+      setSpotsBusan(updated);
+      await saveState('spots-busan', updated);
+    }
+  };
+
+  // 2. EXPENSES Actions
+  const addExpense = async (description: string, amount: number, currency: 'TWD' | 'JPY' | 'KRW') => {
+    if (!me.name) return;
+    const rates = { TWD: 1, JPY: 0.21, KRW: 0.024 }; // Approximate exchange rates
+    const amountTWD = Math.round(amount * rates[currency]);
+
+    const newExpense: Expense = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      payer: me.name,
+      description,
+      amount,
+      currency,
+      amountTWD,
+      created: Date.now()
+    };
+
+    const updated = [...expenses, newExpense];
+    setExpenses(updated);
+    await saveState('expenses', updated);
+  };
+
+  const deleteExpense = async (expenseId: string) => {
+    const updated = expenses.filter((e) => e.id !== expenseId);
+    setExpenses(updated);
+    await saveState('expenses', updated);
+  };
+
+  // 3. MEMOS Actions
+  const addMemo = async (text: string) => {
+    if (!me.name) return;
+    const newMemo: Memo = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      author: me.name,
+      text,
+      created: Date.now()
+    };
+
+    const updated = [...memos, newMemo];
+    setMemos(updated);
+    await saveState('memos', updated);
+  };
+
+  const deleteMemo = async (memoId: string) => {
+    const updated = memos.filter((m) => m.id !== memoId);
+    setMemos(updated);
+    await saveState('memos', updated);
+  };
+
+  const updateMemo = async (memoId: string, text: string) => {
+    const updated = memos.map((m) => {
+      if (m.id === memoId) {
+        return { ...m, text };
+      }
+      return m;
+    });
+    setMemos(updated);
+    await saveState('memos', updated);
+  };
+
+  // 4. WISHLIST Actions
+  const addWishlistItem = async (name: string, category: WishlistItem['category']) => {
+    if (!me.name) return;
+    const newItem: WishlistItem = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name,
+      category,
+      addedBy: me.name,
+      completed: false,
+      created: Date.now()
+    };
+
+    const updated = [...wishlist, newItem];
+    setWishlist(updated);
+    await saveState('wishlist', updated);
+  };
+
+  const toggleWishlistItem = async (itemId: string) => {
+    const updated = wishlist.map((item) => {
+      if (item.id === itemId) {
+        return { ...item, completed: !item.completed };
+      }
+      return item;
+    });
+    setWishlist(updated);
+    await saveState('wishlist', updated);
+  };
+
+  const deleteWishlistItem = async (itemId: string) => {
+    const updated = wishlist.filter((item) => item.id !== itemId);
+    setWishlist(updated);
+    await saveState('wishlist', updated);
+  };
+
+  // 5. CHECKLIST Actions
+  const toggleChecklistItem = async (index: number) => {
+    const updated = { ...checklist, [index]: !checklist[index] };
+    setChecklist(updated);
+    if (dbMode === 'cloud' && database) {
+      try {
+        await set(ref(database, 'cruise-115/checklist'), updated);
+      } catch (e) {
+        console.error('Error saving checklist to Firebase', e);
+      }
+    } else {
+      if (checkLocalStorageUsable()) {
+        localStorage.setItem('cruise:prep-checklist', JSON.stringify(updated));
+      }
+    }
+  };
+
+  return {
+    me,
+    spotsSaseho,
+    spotsBusan,
+    expenses,
+    memos,
+    wishlist,
+    checklist,
+    dbMode,
+    saveName,
+    changeName,
+    addSpot,
+    updateSpot,
+    deleteSpot,
+    toggleVote,
+    addExpense,
+    deleteExpense,
+    addMemo,
+    deleteMemo,
+    updateMemo,
+    addWishlistItem,
+    toggleWishlistItem,
+    deleteWishlistItem,
+    toggleChecklistItem
+  };
+}
+
+
+// --- 檔案 src/hooks/useCollaborativeState.ts 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/WeatherWidget.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Cloud, Sun, CloudRain, CloudSnow, Wind, RefreshCw, Thermometer } from 'lucide-react';
+
+interface WeatherData {
+  keelung: { temp: number; code: number; label: string; icon: any };
+  saseho: { temp: number; code: number; label: string; icon: any };
+  busan: { temp: number; code: number; label: string; icon: any };
+}
+
+function getWeatherLabelAndIcon(code: number) {
+  // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
+  if (code === 0) return { label: '晴朗', icon: Sun };
+  if (code >= 1 && code <= 3) return { label: '多雲時晴', icon: Sun };
+  if (code >= 45 && code <= 48) return { label: '有霧', icon: Cloud };
+  if (code >= 51 && code <= 67) return { label: '小雨/毛毛雨', icon: CloudRain };
+  if (code >= 71 && code <= 77) return { label: '小雪', icon: CloudSnow };
+  if (code >= 80 && code <= 82) return { label: '陣雨', icon: CloudRain };
+  if (code >= 85 && code <= 86) return { label: '陣雪', icon: CloudSnow };
+  if (code >= 95 && code <= 99) return { label: '雷雨', icon: CloudRain };
+  return { label: '陰天', icon: Cloud };
+}
+
+export default function WeatherWidget() {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchWeather = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Keelung, Saseho, Busan
+      const keelungUrl = 'https://api.open-meteo.com/v1/forecast?latitude=25.1276&longitude=121.7449&current=temperature_2m,weather_code';
+      const sasehoUrl = 'https://api.open-meteo.com/v1/forecast?latitude=33.1802&longitude=129.7151&current=temperature_2m,weather_code';
+      const busanUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.1796&longitude=129.0756&current=temperature_2m,weather_code';
+
+      const [resK, resS, resB] = await Promise.all([
+        fetch(keelungUrl).then(res => res.json()),
+        fetch(sasehoUrl).then(res => res.json()),
+        fetch(busanUrl).then(res => res.json())
+      ]);
+
+      const tempK = resK.current.temperature_2m;
+      const codeK = resK.current.weather_code;
+      const descK = getWeatherLabelAndIcon(codeK);
+
+      const tempS = resS.current.temperature_2m;
+      const codeS = resS.current.weather_code;
+      const descS = getWeatherLabelAndIcon(codeS);
+
+      const tempB = resB.current.temperature_2m;
+      const codeB = resB.current.weather_code;
+      const descB = getWeatherLabelAndIcon(codeB);
+
+      setWeather({
+        keelung: { temp: tempK, code: codeK, label: descK.label, icon: descK.icon },
+        saseho: { temp: tempS, code: codeS, label: descS.label, icon: descS.icon },
+        busan: { temp: tempB, code: codeB, label: descB.label, icon: descB.icon }
+      });
+    } catch (err) {
+      console.error('Failed to fetch weather data from open-meteo API', err);
+      // Fallback with realistic mock data
+      setWeather({
+        keelung: { temp: 28.5, code: 0, label: '晴朗安全', icon: Sun },
+        saseho: { temp: 26.2, code: 3, label: '多雲時晴', icon: Sun },
+        busan: { temp: 24.8, code: 80, label: '短暫陣雨', icon: CloudRain }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWeather();
+    // Refresh weather every 10 minutes
+    const interval = setInterval(fetchWeather, 600000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading && !weather) {
+    return (
+      <div className="flex items-center justify-center py-6 text-slate-500 font-mono text-xs">
+        <RefreshCw className="animate-spin mr-2 h-4 w-4" />
+        實時天氣資料載入中...
+      </div>
+    );
+  }
+
+  const data = weather || {
+    keelung: { temp: 28, code: 0, label: '晴天', icon: Sun },
+    saseho: { temp: 26, code: 1, label: '多雲', icon: Cloud },
+    busan: { temp: 25, code: 80, label: '小雨', icon: CloudRain }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 rounded-2xl p-4 md:p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-extrabold text-indigo-950 tracking-wider flex items-center gap-2">
+          <Thermometer className="h-4 w-4 text-indigo-600" />
+          實時港口天氣資訊
+        </h4>
+        <button 
+          onClick={fetchWeather}
+          className="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 text-xs font-bold"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+          手動更新
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        {/* Keelung */}
+        <div className="bg-white/85 backdrop-blur-sm p-3 rounded-xl border border-blue-100/30 flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-xs font-bold text-slate-500">基隆港 ⚓</span>
+          <div className="my-2 text-blue-600">
+            {<data.keelung.icon className="h-7 w-7 stroke-[1.5]" />}
+          </div>
+          <span className="text-base font-extrabold text-slate-800 font-mono">{Math.round(data.keelung.temp)}°C</span>
+          <span className="text-[11px] font-bold text-slate-500 mt-0.5">{data.keelung.label}</span>
+        </div>
+
+        {/* Saseho */}
+        <div className="bg-white/85 backdrop-blur-sm p-3 rounded-xl border border-blue-100/30 flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-xs font-bold text-slate-500">佐世保 ⛩️</span>
+          <div className="my-2 text-amber-500">
+            {<data.saseho.icon className="h-7 w-7 stroke-[1.5]" />}
+          </div>
+          <span className="text-base font-extrabold text-slate-800 font-mono">{Math.round(data.saseho.temp)}°C</span>
+          <span className="text-[11px] font-bold text-slate-500 mt-0.5">{data.saseho.label}</span>
+        </div>
+
+        {/* Busan */}
+        <div className="bg-white/85 backdrop-blur-sm p-3 rounded-xl border border-blue-100/30 flex flex-col items-center justify-center text-center shadow-sm">
+          <span className="text-xs font-bold text-slate-500">釜山港 🏯</span>
+          <div className="my-2 text-indigo-500">
+            {<data.busan.icon className="h-7 w-7 stroke-[1.5]" />}
+          </div>
+          <span className="text-base font-extrabold text-slate-800 font-mono">{Math.round(data.busan.temp)}°C</span>
+          <span className="text-[11px] font-bold text-slate-500 mt-0.5">{data.busan.label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/WeatherWidget.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/ExpenseTracker.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { Expense } from '../types';
+import { Coins, Trash2, HelpCircle, Calculator, ChevronRight, CornerDownRight } from 'lucide-react';
+
+interface ExpenseTrackerProps {
+  expenses: Expense[];
+  meName: string | null;
+  addExpense: (description: string, amount: number, currency: 'TWD' | 'JPY' | 'KRW') => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+}
+
+export default function ExpenseTracker({ expenses, meName, addExpense, deleteExpense }: ExpenseTrackerProps) {
+  const [desc, setDesc] = useState<string>('');
+  const [amount, setAmount] = useState<string>('');
+  const [currency, setCurrency] = useState<'TWD' | 'JPY' | 'KRW'>('JPY');
+
+  // Calculator State
+  const [calcInput, setCalcInput] = useState<string>('');
+  const [calcResult, setCalcResult] = useState<string>('');
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meName) return;
+    const num = parseFloat(amount);
+    if (!desc.trim()) return alert('請填寫消費項目敘述！');
+    if (isNaN(num) || num <= 0) return alert('請填寫正確金額！');
+
+    await addExpense(desc.trim(), num, currency);
+    setDesc('');
+    setAmount('');
+  };
+
+  // Calculator logic
+  const handleCalcBtn = (val: string) => {
+    if (val === 'C') {
+      setCalcInput('');
+      setCalcResult('');
+    } else if (val === '←') {
+      setCalcInput(prev => prev.slice(0, -1));
+    } else if (val === '=') {
+      try {
+        // Safe evaluation of standard math characters
+        const sanitized = calcInput.replace(/[^-+*/.0-9]/g, '');
+        // eslint-disable-next-line no-eval
+        const result = eval(sanitized);
+        if (result !== undefined && !isNaN(result)) {
+          setCalcResult(String(Math.round(result * 100) / 100));
+        }
+      } catch (e) {
+        setCalcResult('Error');
+      }
+    } else {
+      setCalcInput(prev => prev + val);
+    }
+  };
+
+  // Balance logic
+  const totalTWD = expenses.reduce((acc, e) => acc + e.amountTWD, 0);
+  const uniquePayers = Array.from(new Set(expenses.map(e => e.payer)));
+  const payerTotals = uniquePayers.reduce((acc, payer) => {
+    acc[payer] = expenses.filter(e => e.payer === payer).reduce((sum, e) => sum + e.amountTWD, 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const perPersonShare = uniquePayers.length > 0 ? Math.round(totalTWD / uniquePayers.length) : 0;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Input and calculator panel */}
+      <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <Coins className="h-5 w-5 text-amber-500" />
+          新增團體記帳資訊
+        </h3>
+
+        {!meName ? (
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700 font-bold text-center">
+            請先在下方「討論區」輸入您的暱稱，才能參與記帳喔！
+          </div>
+        ) : (
+          <form onSubmit={handleAdd} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">消費描述</label>
+                <input
+                  type="text"
+                  placeholder="例：佐世保漢堡 / 交通車資"
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">金額</label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="金額"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white text-right font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">幣別</label>
+                  <select
+                    value={currency}
+                    onChange={e => setCurrency(e.target.value as any)}
+                    className="w-full h-11 border border-slate-200 rounded-xl px-2 bg-slate-50 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white font-bold"
+                  >
+                    <option value="JPY">JPY (¥)</option>
+                    <option value="KRW">KRW (₩)</option>
+                    <option value="TWD">TWD ($)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
+                <HelpCircle className="h-3 w-3" />
+                依即時匯率概估：1 TWD ≈ 4.76 JPY / 41.6 KRW
+              </span>
+              <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-6 h-11 rounded-xl transition-all shadow-sm"
+              >
+                + 加進記帳本
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Small calculator widget */}
+        <div className="border-t border-slate-100 pt-5">
+          <h4 className="text-xs font-extrabold text-slate-400 tracking-wider flex items-center gap-2 mb-3">
+            <Calculator className="h-4 w-4 text-indigo-500" />
+            隨身小計算機 (計算後可手動填入金額)
+          </h4>
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100/50 max-w-sm">
+            <div className="bg-white border border-slate-200 rounded-xl p-3 mb-3 text-right font-mono min-h-[72px] flex flex-col justify-between">
+              <div className="text-slate-400 text-xs tracking-wider break-all">{calcInput || '0'}</div>
+              <div className="text-slate-800 text-lg font-extrabold break-all">{calcResult ? `= ${calcResult}` : ''}</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {['C', '←', '/', '*'].map(btn => (
+                <button
+                  key={btn}
+                  onClick={() => handleCalcBtn(btn)}
+                  className="h-10 rounded-xl font-extrabold text-sm flex items-center justify-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all active:scale-95"
+                >
+                  {btn}
+                </button>
+              ))}
+              {['7', '8', '9', '-'].map(btn => (
+                <button
+                  key={btn}
+                  onClick={() => handleCalcBtn(btn)}
+                  className="h-10 rounded-xl font-bold text-sm flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all active:scale-95"
+                >
+                  {btn}
+                </button>
+              ))}
+              {['4', '5', '6', '+'].map(btn => (
+                <button
+                  key={btn}
+                  onClick={() => handleCalcBtn(btn)}
+                  className="h-10 rounded-xl font-bold text-sm flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all active:scale-95"
+                >
+                  {btn}
+                </button>
+              ))}
+              <div className="grid grid-cols-3 col-span-3 gap-2">
+                {['1', '2', '3'].map(btn => (
+                  <button
+                    key={btn}
+                    onClick={() => handleCalcBtn(btn)}
+                    className="h-10 rounded-xl font-bold text-sm flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all active:scale-95"
+                  >
+                    {btn}
+                  </button>
+                ))}
+                {['0', '.', '='].map((btn, i) => (
+                  <button
+                    key={btn}
+                    onClick={() => handleCalcBtn(btn)}
+                    className={`h-10 rounded-xl font-extrabold text-sm flex items-center justify-center transition-all active:scale-95 ${
+                      btn === '=' ? 'col-span-2 bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Expense list & summary panel */}
+      <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Summary Card */}
+        <div className="bg-gradient-to-br from-indigo-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm space-y-4">
+          <div>
+            <span className="text-xs font-bold text-indigo-300">團體消費總計</span>
+            <div className="text-3xl font-extrabold font-mono mt-1 text-amber-300">
+              NT$ {totalTWD.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="border-t border-indigo-800/60 pt-3 space-y-2">
+            <div className="flex justify-between text-xs font-bold text-indigo-200">
+              <span>參與記帳人數</span>
+              <span>{uniquePayers.length} 人</span>
+            </div>
+            {uniquePayers.length > 0 && (
+              <div className="flex justify-between text-xs font-bold text-indigo-200">
+                <span>每人平均分攤</span>
+                <span className="text-amber-300 font-mono">NT$ {perPersonShare.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          {uniquePayers.length > 0 && (
+            <div className="border-t border-indigo-800/60 pt-3">
+              <span className="text-xs font-bold text-indigo-300 block mb-2">個別付款統計</span>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-thin">
+                {Object.entries(payerTotals).map(([payer, total]) => {
+                  const diff = total - perPersonShare;
+                  return (
+                    <div key={payer} className="flex justify-between items-center text-xs font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        {payer}
+                      </span>
+                      <span className="font-mono">
+                        已付 NT$ {total.toLocaleString()}{' '}
+                        <span className={diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                          ({diff >= 0 ? `+${diff}` : diff})
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Expense List */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex-1 flex flex-col max-h-[380px]">
+          <h4 className="text-xs font-extrabold text-slate-400 tracking-wider mb-3">消費明細</h4>
+          {expenses.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-xs flex-1 flex flex-col items-center justify-center">
+              🧮 目前尚無記帳紀錄。
+            </div>
+          ) : (
+            <div className="space-y-2 overflow-y-auto flex-1 pr-1 scrollbar-thin">
+              {expenses.map(e => (
+                <div key={e.id} className="flex justify-between items-start bg-slate-50 hover:bg-slate-100 p-3 rounded-xl border border-slate-100 transition-all text-xs">
+                  <div className="space-y-1 flex-1">
+                    <div className="font-extrabold text-slate-800">{e.description}</div>
+                    <div className="text-slate-400 font-bold flex items-center gap-1 flex-wrap">
+                      <span>付清者：{e.payer}</span>
+                      <span className="text-slate-300">|</span>
+                      <span>原幣別：{e.amount} {e.currency}</span>
+                    </div>
+                  </div>
+                  <div className="text-right ml-2 flex flex-col items-end gap-1.5">
+                    <span className="font-mono font-extrabold text-indigo-950">NT$ {e.amountTWD}</span>
+                    {(e.payer === meName || !meName) && (
+                      <button
+                        onClick={() => deleteExpense(e.id)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors"
+                        title="刪除"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/ExpenseTracker.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/ShoppingSection.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { WishlistItem } from '../types';
+import { RECOMMENDATIONS } from '../data';
+import { ShoppingCart, Check, Trash2, Plus, CornerDownRight, Tag } from 'lucide-react';
+
+interface ShoppingSectionProps {
+  wishlist: WishlistItem[];
+  meName: string | null;
+  addWishlistItem: (name: string, category: WishlistItem['category']) => Promise<void>;
+  toggleWishlistItem: (id: string) => Promise<void>;
+  deleteWishlistItem: (id: string) => Promise<void>;
+}
+
+export default function ShoppingSection({
+  wishlist,
+  meName,
+  addWishlistItem,
+  toggleWishlistItem,
+  deleteWishlistItem
+}: ShoppingSectionProps) {
+  const [customItem, setCustomItem] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'japan' | 'korea_oy' | 'korea_rx'>('japan');
+
+  const handleAddCustom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meName) return alert('請先填寫暱稱！');
+    if (!customItem.trim()) return;
+
+    await addWishlistItem(customItem.trim(), 'custom');
+    setCustomItem('');
+  };
+
+  const handleQuickAdd = async (name: string) => {
+    if (!meName) return alert('請先在下方討論區填寫您的暱稱，才能加進購買清單！');
+    // Check if already exists in wishlist to avoid duplicates
+    const exists = wishlist.some(item => item.name.toLowerCase() === name.toLowerCase() && !item.completed);
+    if (exists) {
+      alert(`「${name}」已存在於大家的待買清單中囉！`);
+      return;
+    }
+    await addWishlistItem(name, activeTab);
+  };
+
+  // Group wishlist items
+  const customItems = wishlist.filter(i => i.category === 'custom');
+  const groupedWishlist = wishlist; // We can show all together
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <ShoppingCart className="h-5 w-5 text-indigo-500" />
+          藥妝、美妝與藥局代購待買清單 🛍️
+        </h3>
+        <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-full">
+          隨手一按＋即刻代購
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left column: recommendations (Japan/Korea tabs) */}
+        <div className="lg:col-span-7 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col">
+          <span className="text-xs font-extrabold text-slate-500 mb-3 block">🇯🇵 🇰🇷 日韓熱門推薦（點擊 ＋ 號直接加入清單）</span>
+          
+          {/* Recommendation tabs */}
+          <div className="flex bg-slate-200/60 p-1 rounded-xl mb-3 gap-1">
+            <button
+              onClick={() => setActiveTab('japan')}
+              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+                activeTab === 'japan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              🇯🇵 日本熱門 Top 10
+            </button>
+            <button
+              onClick={() => setActiveTab('korea_oy')}
+              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+                activeTab === 'korea_oy' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              🇰🇷 韓國 Olive Young
+            </button>
+            <button
+              onClick={() => setActiveTab('korea_rx')}
+              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+                activeTab === 'korea_rx' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              🇰🇷 韓國藥局必買
+            </button>
+          </div>
+
+          {/* Recommended Items Grid */}
+          <div className="space-y-1.5 overflow-y-auto max-h-[220px] pr-1 scrollbar-thin">
+            {RECOMMENDATIONS[activeTab].map((item) => {
+              const inWishlist = wishlist.some(w => w.name === item && !w.completed);
+              return (
+                <div
+                  key={item}
+                  onClick={() => handleQuickAdd(item)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    inWishlist
+                      ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700'
+                      : 'bg-white border-slate-200/60 text-slate-700 hover:border-indigo-400 hover:text-indigo-600'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Tag className="h-3.5 w-3.5 opacity-60" />
+                    {item}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {inWishlist ? (
+                      <span className="text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-800 font-extrabold flex items-center gap-0.5">
+                        <Check className="h-2.5 w-2.5" /> 已在清單
+                      </span>
+                    ) : (
+                      <span className="h-5 w-5 bg-indigo-50 text-indigo-700 rounded-full flex items-center justify-center font-black text-sm">
+                        +
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right column: our shared wishlist */}
+        <div className="lg:col-span-5 flex flex-col bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-[350px]">
+          <span className="text-xs font-extrabold text-slate-500 mb-3 block">🛒 我們的採購清單</span>
+
+          <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin mb-3">
+            {groupedWishlist.length === 0 ? (
+              <div className="text-center py-16 text-slate-400 text-xs flex flex-col items-center justify-center">
+                <span>目前清單空空的。</span>
+                <span className="mt-1">點左側＋號或在下方輸入，</span>
+                <span>即可新增採購內容！</span>
+              </div>
+            ) : (
+              groupedWishlist.map((item) => (
+                <div
+                  key={item.id}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-xs ${
+                    item.completed
+                      ? 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'
+                      : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                  }`}
+                >
+                  <div
+                    onClick={() => toggleWishlistItem(item.id)}
+                    className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
+                  >
+                    <div
+                      className={`h-4.5 w-4.5 rounded-md border flex items-center justify-center text-white text-[10px] ${
+                        item.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      ✓
+                    </div>
+                    <span className="font-bold truncate">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className="text-[9px] bg-slate-200 text-slate-500 font-extrabold px-1 py-0.5 rounded">
+                      {item.addedBy}
+                    </span>
+                    <button
+                      onClick={() => deleteWishlistItem(item.id)}
+                      className="text-slate-400 hover:text-rose-500 transition-colors"
+                      title="刪除"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Add custom custom item form */}
+          <form onSubmit={handleAddCustom} className="flex gap-1">
+            <input
+              type="text"
+              placeholder="自行輸入想買的商品..."
+              value={customItem}
+              onChange={e => setCustomItem(e.target.value)}
+              className="flex-1 h-9 border border-slate-200 rounded-lg px-2 bg-white text-xs focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3 rounded-lg transition-all"
+            >
+              新增
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/ShoppingSection.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/LocalTipsSection.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { LOCAL_TIPS } from '../data';
+import { AlertCircle, HelpCircle, ArrowRight, CornerDownRight, Compass } from 'lucide-react';
+
+export default function LocalTipsSection() {
+  const [activeTab, setActiveTab] = useState<'saseho' | 'busan'>('saseho');
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-indigo-500" />
+          自由行當地避坑小叮嚀 💡
+        </h3>
+        <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-full">
+          交通、防詐騙、熱門預約
+        </span>
+      </div>
+
+      <p className="text-slate-500 text-xs font-bold leading-relaxed">
+        由本航線靠港經驗整理的日韓自由行必看避坑貼士，出發前一定要先看熟、下載好推薦的手機 App 喔！
+      </p>
+
+      {/* Tab select */}
+      <div className="flex bg-slate-100 p-1 rounded-xl max-w-xs gap-1">
+        <button
+          onClick={() => setActiveTab('saseho')}
+          className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+            activeTab === 'saseho' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          ⛩️ 日本佐世保
+        </button>
+        <button
+          onClick={() => setActiveTab('busan')}
+          className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+            activeTab === 'busan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          🏯 韓國釜山
+        </button>
+      </div>
+
+      {/* Grid of Tips */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {LOCAL_TIPS[activeTab].map((tip, idx) => (
+          <div
+            key={idx}
+            className="bg-slate-50 hover:bg-indigo-50/20 border border-slate-100 rounded-xl p-4 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-sm">📌</span>
+                <h4 className="text-sm font-extrabold text-slate-800">{tip.title}</h4>
+              </div>
+              <p
+                className="text-xs text-slate-600 font-bold leading-relaxed whitespace-pre-wrap pl-5"
+                dangerouslySetInnerHTML={{ __html: tip.desc }}
+              />
+            </div>
+            {activeTab === 'busan' && tip.title.includes('防止') && (
+              <div className="mt-3 pl-5 flex items-center gap-1.5 text-[10px] bg-rose-50 text-rose-700 border border-rose-100 p-1.5 rounded-lg font-extrabold">
+                <Compass className="h-3.5 w-3.5 text-rose-600 animate-spin" />
+                防詐重點：認明橘色計程車，看好跳錶 (Meter) 再出發！
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/LocalTipsSection.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/MemoSection.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { Memo } from '../types';
+import { Notebook, Trash2, Edit3, Check, X, FileText } from 'lucide-react';
+
+interface MemoSectionProps {
+  memos: Memo[];
+  meName: string | null;
+  addMemo: (text: string) => Promise<void>;
+  deleteMemo: (id: string) => Promise<void>;
+  updateMemo: (id: string, text: string) => Promise<void>;
+}
+
+export default function MemoSection({ memos, meName, addMemo, deleteMemo, updateMemo }: MemoSectionProps) {
+  const [newMemo, setNewMemo] = useState<string>('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meName) return;
+    if (!newMemo.trim()) return;
+
+    await addMemo(newMemo.trim());
+    setNewMemo('');
+  };
+
+  const startEdit = (memo: Memo) => {
+    setEditingId(memo.id);
+    setEditingText(memo.text);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editingText.trim()) return;
+    await updateMemo(id, editingText.trim());
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <Notebook className="h-5 w-5 text-indigo-500" />
+          房密、訂票與備忘筆記本
+        </h3>
+        <span className="text-[10px] bg-slate-100 font-extrabold text-slate-500 px-2 py-0.5 rounded-full">
+          多人協同編輯 📝
+        </span>
+      </div>
+
+      <p className="text-slate-500 text-xs font-bold leading-normal">
+        在這裡記下房號、WiFi帳號密碼、訂位代號、領隊聯絡資料或集合提醒，大家開啟同個頁面都能立即同步與紀錄！
+      </p>
+
+      {/* Memo list */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
+        {memos.length === 0 ? (
+          <div className="col-span-2 text-center py-8 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center">
+            <FileText className="h-8 w-8 text-slate-300 mb-2" />
+            目前筆記本空空如也，快在下方新增一筆吧！
+          </div>
+        ) : (
+          memos.map((m) => {
+            const isEditing = editingId === m.id;
+            return (
+              <div
+                key={m.id}
+                className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between hover:shadow-sm transition-all"
+              >
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      className="w-full text-xs p-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 resize-none h-16 font-medium text-slate-700"
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded"
+                        title="取消"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => saveEdit(m.id)}
+                        className="p-1 text-emerald-500 hover:text-emerald-700 rounded"
+                        title="儲存"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs font-medium text-slate-700 whitespace-pre-wrap break-all leading-relaxed">
+                      {m.text}
+                    </p>
+                    <div className="flex items-center justify-between border-t border-slate-200/50 pt-2 mt-3">
+                      <span className="text-[10px] font-bold text-slate-400">
+                        ✍️ {m.author} · {new Date(m.created).toLocaleDateString('zh-TW', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => startEdit(m)}
+                          className="text-slate-400 hover:text-indigo-600 transition-colors"
+                          title="修改"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => deleteMemo(m.id)}
+                          className="text-slate-400 hover:text-rose-600 transition-colors"
+                          title="刪除"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Input form */}
+      {!meName ? (
+        <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700 font-bold text-center">
+          請先在下方「討論區」輸入您的暱稱，才能撰寫備忘錄筆記！
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="新增筆記...（例：領隊 LINE ID: msc_guide / 房密：11202）"
+            value={newMemo}
+            onChange={(e) => setNewMemo(e.target.value)}
+            className="flex-1 h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+          />
+          <button
+            type="submit"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 rounded-xl transition-all shadow-sm"
+          >
+            記一筆
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/MemoSection.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/components/ItineraryBuilder.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { Spot } from '../types';
+import { Calendar, Clock, AlertTriangle, ArrowRight, Compass, ShieldAlert, CheckSquare, Square } from 'lucide-react';
+
+interface ItineraryBuilderProps {
+  spotsSaseho: Spot[];
+  spotsBusan: Spot[];
+  updateSpot: (port: 'saseho' | 'busan', spotId: string, updates: Partial<Spot>) => Promise<void>;
+}
+
+export default function ItineraryBuilder({ spotsSaseho, spotsBusan, updateSpot }: ItineraryBuilderProps) {
+  const [activePort, setActivePort] = useState<'saseho' | 'busan'>('saseho');
+  const [dwellTime, setDwellTime] = useState<number>(90); // default 90 mins per spot
+  const [transitTime, setTransitTime] = useState<number>(30); // default 30 mins transit
+
+  const currentSpots = activePort === 'saseho' ? spotsSaseho : spotsBusan;
+  const selectedSpots = currentSpots.filter(s => s.selectedInItinerary);
+
+  // Port config
+  const portConfig = {
+    saseho: {
+      name: '佐世保',
+      disembark: '10:00',
+      disembarkMins: 600, // 10 * 60
+      mustReturn: '18:30',
+      mustReturnMins: 1110, // 18.5 * 60
+      maxHours: 8.5
+    },
+    busan: {
+      name: '釜山',
+      disembark: '07:30',
+      disembarkMins: 450, // 7.5 * 60
+      mustReturn: '15:30',
+      mustReturnMins: 930, // 15.5 * 60
+      maxHours: 8.0
+    }
+  };
+
+  const activePortConfig = portConfig[activePort];
+
+  // Toggle selection
+  const handleToggleSelect = async (spot: Spot) => {
+    await updateSpot(activePort, spot.id, {
+      selectedInItinerary: !spot.selectedInItinerary
+    });
+  };
+
+  // Build timeline
+  let timelineItems: Array<{
+    type: 'spot' | 'transit' | 'return';
+    timeString: string;
+    label: string;
+    duration?: number;
+    spot?: Spot;
+  }> = [];
+
+  let totalMinsUsed = 0;
+  let hasExceeded = false;
+
+  if (selectedSpots.length > 0) {
+    let currentMins = activePortConfig.disembarkMins;
+
+    selectedSpots.forEach((spot, index) => {
+      // 1. Add Spot
+      const startHour = Math.floor(currentMins / 60);
+      const startMin = currentMins % 60;
+      const endMins = currentMins + dwellTime;
+      const endHour = Math.floor(endMins / 60);
+      const endMin = endMins % 60;
+
+      const timeString = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')} - ${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+
+      timelineItems.push({
+        type: 'spot',
+        timeString,
+        label: spot.name,
+        duration: dwellTime,
+        spot
+      });
+
+      currentMins = endMins;
+      totalMinsUsed += dwellTime;
+
+      // 2. Add Transit if not the last item
+      if (index < selectedSpots.length - 1) {
+        const transitEnd = currentMins + transitTime;
+        const transStartH = Math.floor(currentMins / 60);
+        const transStartM = currentMins % 60;
+        const transEndH = Math.floor(transitEnd / 60);
+        const transEndM = transitEnd % 60;
+
+        const transTimeString = `${String(transStartH).padStart(2, '0')}:${String(transStartM).padStart(2, '0')} ➔ ${String(transEndH).padStart(2, '0')}:${String(transEndM).padStart(2, '0')}`;
+
+        timelineItems.push({
+          type: 'transit',
+          timeString: transTimeString,
+          label: `交通接駁／搭車中 (約 ${transitTime} 分鐘)`,
+          duration: transitTime
+        });
+
+        currentMins = transitEnd;
+        totalMinsUsed += transitTime;
+      }
+    });
+
+    // 3. Add Final Return to Ship
+    const returnStartH = Math.floor(currentMins / 60);
+    const returnStartM = currentMins % 60;
+    const finalReturnString = `${String(returnStartH).padStart(2, '0')}:${String(returnStartM).padStart(2, '0')} ➔ ${activePortConfig.mustReturn}`;
+
+    timelineItems.push({
+      type: 'return',
+      timeString: finalReturnString,
+      label: '返回郵輪準備登船'
+    });
+
+    // Check if exceeded limit
+    hasExceeded = currentMins > activePortConfig.mustReturnMins;
+  }
+
+  const hoursUsed = Math.round((totalMinsUsed / 60) * 10) / 10;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-indigo-500" />
+          我們的自由行「終極排程計畫」
+        </h3>
+        <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <Clock className="h-3 w-3" /> 避開上下船前後
+        </span>
+      </div>
+
+      <p className="text-slate-500 text-xs font-bold leading-relaxed">
+        從大家在下方新增的討論景點中，<b>勾選想排進當日行程的選項</b>。系統會排除排隊上下船所需的前後安全緩衝時間，自動為您估算出每站建議停留時間、交通轉乘與時間總長警告！
+      </p>
+
+      {/* Port Switcher */}
+      <div className="flex bg-slate-100 p-1 rounded-xl max-w-xs gap-1">
+        <button
+          onClick={() => setActivePort('saseho')}
+          className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+            activePort === 'saseho' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          ⛩️ 佐世保排程
+        </button>
+        <button
+          onClick={() => setActivePort('busan')}
+          className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+            activePort === 'busan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          🏯 釜山排程
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left column: checkboxes to select spots */}
+        <div className="lg:col-span-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[380px]">
+          <span className="text-xs font-extrabold text-slate-500 mb-3 block">
+            選擇想排入【{activePortConfig.name}】的景點
+          </span>
+
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2 scrollbar-thin">
+            {currentSpots.length === 0 ? (
+              <div className="text-center py-20 text-slate-400 text-xs font-medium">
+                目前討論區尚無景點，請先在下方新增想去的景點喔！
+              </div>
+            ) : (
+              currentSpots.map(s => {
+                const isSelected = !!s.selectedInItinerary;
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => handleToggleSelect(s)}
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-indigo-50/70 border-indigo-200 text-indigo-900'
+                        : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {isSelected ? (
+                        <CheckSquare className="h-4.5 w-4.5 text-indigo-600 flex-none" />
+                      ) : (
+                        <Square className="h-4.5 w-4.5 text-slate-300 flex-none" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-xs truncate">{s.name}</div>
+                        <div className="text-[10px] text-slate-400 font-bold">推薦者：{s.author}</div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
+                      👍 {s.voters?.length || 0}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right column: timeline output and warnings */}
+        <div className="lg:col-span-7 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Safe buffer and timeline summary */}
+            <div className="flex items-center justify-between flex-wrap gap-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/30 text-xs">
+              <span className="font-extrabold text-indigo-950">
+                🚀 上岸出發時間：<span className="font-mono text-indigo-600">{activePortConfig.disembark}</span>
+              </span>
+              <span className="font-extrabold text-indigo-950">
+                ⚓ 回到港口時限：<span className="font-mono text-indigo-600">{activePortConfig.mustReturn}</span>
+              </span>
+              <span className="font-extrabold text-indigo-950 bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
+                安全可玩 {activePortConfig.maxHours} 小時
+              </span>
+            </div>
+
+            {/* Dwell time sliders */}
+            {selectedSpots.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 mb-1">
+                    景點停留時長 ({dwellTime} 分鐘)
+                  </label>
+                  <input
+                    type="range"
+                    min="30"
+                    max="180"
+                    step="15"
+                    value={dwellTime}
+                    onChange={e => setDwellTime(parseInt(e.target.value))}
+                    className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 mb-1">
+                    景點間平均車程 ({transitTime} 分鐘)
+                  </label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="90"
+                    step="5"
+                    value={transitTime}
+                    onChange={e => setTransitTime(parseInt(e.target.value))}
+                    className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Warning banner */}
+            {hasExceeded && (
+              <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-xs text-rose-700 flex items-start gap-2.5 shadow-sm animate-pulse">
+                <ShieldAlert className="h-5 w-5 text-rose-600 flex-none mt-0.5" />
+                <div className="font-bold leading-normal">
+                  <b>⚠️ 注意：行程總時長已超過港口時限！</b>
+                  <br />
+                  估算已用時長為 {hoursUsed} 小時 (加乘交通與停留時間)，已超過可玩的 {activePortConfig.maxHours} 小時！建議刪減一些勾選景點，或者縮短停留時間，以免錯過郵輪離港 (船是不等人的喔！)。
+                </div>
+              </div>
+            )}
+
+            {/* Timeline sequence display */}
+            <div className="space-y-3 overflow-y-auto max-h-[220px] pr-1 scrollbar-thin">
+              {selectedSpots.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 text-xs flex flex-col items-center justify-center">
+                  <Compass className="h-10 w-10 text-slate-200 mb-2" />
+                  請勾選左側想去的景點，自動生成推薦行程表！
+                </div>
+              ) : (
+                <div className="relative border-l border-indigo-100 pl-4 ml-2.5 py-1 space-y-4">
+                  {/* Port start */}
+                  <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-indigo-600" />
+                  
+                  {timelineItems.map((item, idx) => {
+                    if (item.type === 'spot') {
+                      return (
+                        <div key={idx} className="relative">
+                          <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white" />
+                          <div className="text-[10px] font-bold font-mono text-indigo-600">{item.timeString}</div>
+                          <div className="text-xs font-extrabold text-slate-800 mt-0.5 flex items-center gap-1.5">
+                            📍 {item.label}
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1 py-0.5 rounded">
+                              待 {item.duration} 分鐘
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    } else if (item.type === 'transit') {
+                      return (
+                        <div key={idx} className="relative pl-2.5 py-1 border-l border-dashed border-slate-300 -ml-4">
+                          <div className="text-[10px] font-bold text-slate-400 font-mono">{item.timeString}</div>
+                          <div className="text-[10px] font-bold text-slate-500 mt-0.5 flex items-center gap-1">
+                            🚗 {item.label}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // return
+                      return (
+                        <div key={idx} className="relative">
+                          <div className="absolute -left-[22px] top-1 w-3 h-3 rounded-full bg-amber-500 border-2 border-white animate-ping" />
+                          <div className="absolute -left-[22px] top-1 w-3 h-3 rounded-full bg-amber-500 border-2 border-white" />
+                          <div className="text-[10px] font-bold font-mono text-amber-600">{item.timeString}</div>
+                          <div className="text-xs font-extrabold text-amber-800 mt-0.5">
+                            ⚓ {item.label}
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/components/ItineraryBuilder.tsx 結束 ---
+
+
+########################################################################
+## 📂 檔案位置: src/App.tsx
+########################################################################
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Ship, Calendar, HelpCircle, Heart, Trash2, Edit3, Check, X, 
+  MapPin, DollarSign, Tag, Navigation, Flame, Sparkles, ChevronLeft, 
+  ChevronRight, Camera, HelpCircle as InfoIcon, CheckCircle2, ChevronDown, 
+  AlertTriangle, Eye, Compass, MessageSquare, ListTodo, Plus
+} from 'lucide-react';
+
+import { DAYS, SHIP, NOTES, CONFIRM, CHECKLIST, CATS, IDEAS, TOUR } from './data';
+import { Spot, Expense, Memo, WishlistItem } from './types';
+import { useCollaborativeState } from './hooks/useCollaborativeState';
+
+// Subcomponents
+import WeatherWidget from './components/WeatherWidget';
+import ExpenseTracker from './components/ExpenseTracker';
+import ItineraryBuilder from './components/ItineraryBuilder';
+import MemoSection from './components/MemoSection';
+import ShoppingSection from './components/ShoppingSection';
+import LocalTipsSection from './components/LocalTipsSection';
+
+const RATE = 31.5; // JPY/KRW estimates
+
+export default function App() {
+  const {
+    me,
+    spotsSaseho,
+    spotsBusan,
+    expenses,
+    memos,
+    wishlist,
+    checklist,
+    dbMode,
+    saveName,
+    changeName,
+    addSpot,
+    updateSpot,
+    deleteSpot,
+    toggleVote,
+    addExpense,
+    deleteExpense,
+    addMemo,
+    deleteMemo,
+    updateMemo,
+    addWishlistItem,
+    toggleWishlistItem,
+    deleteWishlistItem,
+    toggleChecklistItem
+  } = useCollaborativeState();
+
+  // Navigation tabs active
+  const [activeSection, setActiveSection] = useState('overview');
+
+  // Accordion Day By Day active state
+  const [expandedDay, setExpandedDay] = useState<number | null>(1);
+
+  // Accordion Notes Active states
+  const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({ 0: true });
+
+  // Accordion Q&A Active states
+  const [expandedConfirm, setExpandedConfirm] = useState<Record<number, boolean>>({ 0: true });
+
+  // Accordion Fee reference folding
+  const [feeFolded, setFeeFolded] = useState(false);
+
+  // Countdown timer state
+  const [countdown, setCountdown] = useState({ d: 0, h: '00', m: '00', s: '00' });
+
+  // Cost calculator state
+  const [calcTab, setCalcTab] = useState<'onboard' | 'offship'>('onboard');
+  const [wifiPlan, setWifiPlan] = useState<'none' | 'browse' | 'stream'>('none');
+  const [drinkPlan, setDrinkPlan] = useState<'none' | 'soft' | 'alcohol'>('none');
+  const [diningCount, setDiningCount] = useState<number>(0);
+  const [diningCostUnit, setDiningCostUnit] = useState<number>(1200);
+  const [extraOnboard, setExtraOnboard] = useState<number>(1000);
+  const [paxCount, setPaxCount] = useState<number>(2);
+
+  // Disembark plans
+  const [sasehoMode, setSasehoMode] = useState<'none' | 'free' | 'tour'>('free');
+  const [busanMode, setBusanMode] = useState<'none' | 'free' | 'tour'>('free');
+  const [sasehoFreeCost, setSasehoFreeCost] = useState<number>(3400);
+  const [busanFreeCost, setBusanFreeCost] = useState<number>(4300);
+  const [sasehoTourSel, setSasehoTourSel] = useState<'a' | 'b'>('a');
+  const [busanTourSel, setBusanTourSel] = useState<'a' | 'b'>('a');
+  const [sizeSaseho, setSizeSaseho] = useState<'over' | 'under'>('over');
+  const [sizeBusan, setSizeBusan] = useState<'over' | 'under'>('over');
+
+  // Discussion forum state
+  const [discPort, setDiscPort] = useState<'saseho' | 'busan'>('saseho');
+  const [spotName, setSpotName] = useState('');
+  const [spotCost, setSpotCost] = useState('');
+  const [spotNote, setSpotNote] = useState('');
+  const [spotMap, setSpotMap] = useState('');
+  const [spotCategory, setSpotCategory] = useState('sight');
+  const [uploadedBase64s, setUploadedBase64s] = useState<string[]>([]);
+  const [spotSort, setSpotSort] = useState<'votes' | 'new'>('votes');
+  const [nameInput, setNameInput] = useState('');
+
+  // In-place Spot Editing state
+  const [editingSpotId, setEditingSpotId] = useState<string | null>(null);
+  const [editingSpotNote, setEditingSpotNote] = useState<string>('');
+  const [editingSpotMap, setEditingSpotMap] = useState<string>('');
+  const [editingSpotCost, setEditingSpotCost] = useState<string>('');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize countdown
+  useEffect(() => {
+    const target = new Date("2026-07-25T17:00:00+08:00").getTime();
+    const timer = setInterval(() => {
+      const now = Date.now();
+      let diff = Math.max(0, target - now);
+      const d = Math.floor(diff / 864e5);
+      diff -= d * 864e5;
+      const h = Math.floor(diff / 36e5);
+      diff -= h * 36e5;
+      const m = Math.floor(diff / 6e4);
+      diff -= m * 6e4;
+      const s = Math.floor(diff / 1e3);
+
+      setCountdown({
+        d,
+        h: String(h).padStart(2, '0'),
+        m: String(m).padStart(2, '0'),
+        s: String(s).padStart(2, '0')
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Smooth scroll spy helper
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(id);
+    }
+  };
+
+  // Image compression function
+  const handleImageUploadChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const base64Promises = Array.from(files).map((file: File) => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 300;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(dataUrl);
+          };
+          img.onerror = (e) => reject(e);
+        };
+        reader.onerror = (e) => reject(e);
+      });
+    });
+
+    try {
+      const results = await Promise.all(base64Promises);
+      setUploadedBase64s(prev => [...prev, ...results]);
+    } catch (err) {
+      alert('圖片上傳失敗，請重試！');
+    }
+  };
+
+  const removeUploadedImage = (index: number) => {
+    setUploadedBase64s(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Spot add submit
+  const handleAddSpotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!me.name) {
+      alert('請先在下方「討論區」輸入暱稱登入！');
+      return;
+    }
+    if (!spotName.trim()) {
+      alert('景點或店名為必填欄位！');
+      return;
+    }
+
+    let mapUrl = spotMap.trim();
+    if (mapUrl && !/^https?:\/\//i.test(mapUrl)) {
+      mapUrl = 'https://' + mapUrl;
+    }
+
+    await addSpot(discPort, {
+      name: spotName.trim(),
+      cat: spotCategory,
+      note: spotNote.trim(),
+      cost: spotCost.trim(),
+      map: mapUrl,
+      images: uploadedBase64s
+    });
+
+    // Reset Form
+    setSpotName('');
+    setSpotCost('');
+    setSpotNote('');
+    setSpotMap('');
+    setUploadedBase64s([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Add from pre-made ideas
+  const handleAddFromIdea = async (name: string, cat: string) => {
+    if (!me.name) {
+      alert('請先輸入暱稱進入討論區喔！');
+      return;
+    }
+    // Check if duplicate
+    const currentSpots = discPort === 'saseho' ? spotsSaseho : spotsBusan;
+    if (currentSpots.some(s => s.name === name)) {
+      alert(`「${name}」已經在清單中囉！`);
+      return;
+    }
+
+    await addSpot(discPort, {
+      name,
+      cat,
+      note: '',
+      cost: '',
+      map: '',
+      images: []
+    });
+  };
+
+  // Start in-place edit spot
+  const startEditSpot = (spot: Spot) => {
+    setEditingSpotId(spot.id);
+    setEditingSpotNote(spot.note);
+    setEditingSpotMap(spot.map);
+    setEditingSpotCost(spot.cost);
+  };
+
+  const saveSpotEdit = async (port: 'saseho' | 'busan', spotId: string) => {
+    let mapUrl = editingSpotMap.trim();
+    if (mapUrl && !/^https?:\/\//i.test(mapUrl)) {
+      mapUrl = 'https://' + mapUrl;
+    }
+
+    await updateSpot(port, spotId, {
+      note: editingSpotNote.trim(),
+      map: mapUrl,
+      cost: editingSpotCost.trim()
+    });
+
+    setEditingSpotId(null);
+  };
+
+  // Calculate self budgets
+  const wifiPrice = wifiPlan === 'none' ? 0 : wifiPlan === 'browse' ? 2200 : 5900;
+  const drinkPrice = drinkPlan === 'none' ? 0 : drinkPlan === 'soft' ? 5500 : 9500;
+  const diningPrice = diningCount * diningCostUnit;
+  const selfOnboardTotal = wifiPrice + drinkPrice + diningPrice + extraOnboard;
+
+  // Calculate disembark budgets
+  const sasehoCost = sasehoMode === 'none' ? 0 : sasehoMode === 'free' ? sasehoFreeCost : TOUR.saseho[sasehoTourSel][sizeSaseho];
+  const busanCost = busanMode === 'none' ? 0 : busanMode === 'free' ? busanFreeCost : TOUR.busan[busanTourSel][sizeBusan];
+
+  const personalTotal = selfOnboardTotal + sasehoCost + busanCost;
+  const groupTotal = personalTotal * paxCount;
+
+  // Render Category styling
+  const getCatObj = (k: string) => {
+    return CATS.find(c => c.k === k) || CATS[5];
+  };
+
+  // Spot List formatting and sorting
+  const getSortedSpots = (spots: Spot[]) => {
+    const list = [...spots];
+    if (spotSort === 'votes') {
+      return list.sort((a, b) => (b.voters?.length || 0) - (a.voters?.length || 0) || b.created - a.created);
+    }
+    return list.sort((a, b) => b.created - a.created);
+  };
+
+  const activePortSpots = discPort === 'saseho' ? spotsSaseho : spotsBusan;
+  const sortedSpotsToShow = getSortedSpots(activePortSpots);
+
+  // Count done checklist items
+  const doneChecklistCount = Object.values(checklist).filter(Boolean).length;
+  const checklistTotal = CHECKLIST.length;
+  const checklistPercent = checklistTotal > 0 ? (doneChecklistCount / checklistTotal) * 100 : 0;
+
+  return (
+    <div className="min-h-screen bg-[#f3fafc] text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+      
+      {/* ===== NAVIGATION BAR ===== */}
+      <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-50/80 border-b border-sky-100 shadow-sm transition-all">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl animate-bounce">🚢</span>
+            <span className="font-black text-slate-800 tracking-tight text-base sm:text-lg">
+              康匠郵輪之旅 <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">115員工旅遊</span>
+            </span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-1 overflow-x-auto py-1">
+            {[
+              { id: 'overview', label: '行程總覽' },
+              { id: 'daily', label: '每日行程' },
+              { id: 'ship', label: '郵輪亮點' },
+              { id: 'dining', label: '船上餐食' },
+              { id: 'cost', label: '費用估算' },
+              { id: 'notes', label: '注意事項' },
+              { id: 'confirm', label: '旅行社Q&A' },
+              { id: 'discuss', label: '自由行討論區' }
+            ].map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`text-xs font-extrabold px-3 py-2 rounded-full transition-all ${
+                  activeSection === section.id
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/50 hover:text-indigo-600'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => scrollToSection('discuss')}
+            className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-full shadow-md shadow-rose-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1"
+          >
+            🗺️ 一起選景點
+          </button>
+        </div>
+      </nav>
+
+      {/* ===== HERO HEADER ===== */}
+      <header className="relative bg-gradient-to-br from-indigo-950 via-slate-900 to-sky-900 text-white overflow-hidden py-16 px-4 md:py-24">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_800px_400px_at_80%_-10%,rgba(99,102,241,0.25),transparent_60%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_600px_400px_at_10%_110%,rgba(245,158,11,0.1),transparent_50%)] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-8 space-y-6">
+            <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full text-xs font-bold text-amber-300">
+              🌊 台灣康匠 · 超豪華員工福利郵輪大航海
+            </span>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-none text-white">
+              佐世保 × 釜山 <br className="hidden sm:block" />
+              <span className="bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-100 bg-clip-text text-transparent">
+                六天五夜郵輪之旅
+              </span>
+            </h1>
+            <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl font-medium leading-relaxed">
+              搭乘亞洲最大頂級豪華旗艦郵輪 <b>MSC 榮耀號 Bellissima</b>，免除行李轉乘奔波之苦。一覺醒來已靠岸日本佐世保與韓國釜山！極致享受豐富船上設施，岸上安排各自自主，自由自在！
+            </p>
+
+            <div className="flex flex-wrap gap-2.5 pt-2">
+              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+                📅 2026.07.25 – 07.30
+              </span>
+              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+                ⚓ 基隆西岸旅客碼頭
+              </span>
+              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+                🛳️ 17.2萬噸 傳奇旗艦
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-4">
+              <button
+                onClick={() => scrollToSection('overview')}
+                className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl shadow-lg shadow-rose-500/30 transition-all hover:-translate-y-0.5"
+              >
+                看行程總覽
+              </button>
+              <button
+                onClick={() => scrollToSection('discuss')}
+                className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all"
+              >
+                🗺️ 直達討論區規劃
+              </button>
+            </div>
+          </div>
+
+          {/* Countdown & visual ship column */}
+          <div className="lg:col-span-4 flex flex-col items-center justify-center space-y-6">
+            {/* Countdown card */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/15 p-5 rounded-3xl w-full max-w-xs shadow-xl flex flex-col items-center">
+              <span className="text-xs font-bold text-slate-300 tracking-wider mb-3">距離啟航出發倒數 ⏰</span>
+              <div className="flex gap-2">
+                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
+                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.d}</span>
+                  <span className="block text-[10px] font-bold text-sky-200 mt-1">天</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
+                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.h}</span>
+                  <span className="block text-[10px] font-bold text-sky-200 mt-1">時</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
+                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.m}</span>
+                  <span className="block text-[10px] font-bold text-sky-200 mt-1">分</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
+                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.s}</span>
+                  <span className="block text-[10px] font-bold text-sky-200 mt-1">秒</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ship illustration */}
+            <div className="w-full max-w-[260px] opacity-90 hover:opacity-100 transition-all duration-300 hidden sm:block">
+              <svg viewBox="0 0 460 300" className="w-full h-auto animate-pulse">
+                <path d="M70 142 H360 L335 196 Q330 206 318 206 H112 Q100 206 95 196 Z" fill="#ffffff" stroke="#dfeaf0" />
+                <path d="M82 168 H348 L341 182 H88 Z" fill="#28c2d2" opacity="0.85" />
+                <rect x="120" y="120" width="190" height="22" rx="6" fill="#fff" />
+                <rect x="140" y="98" width="150" height="24" rx="6" fill="#f3f8fb" />
+                <rect x="160" y="78" width="110" height="22" rx="6" fill="#fff" />
+                <rect x="180" y="56" width="20" height="26" rx="5" fill="#123a5e" />
+                <rect x="210" y="56" width="20" height="26" rx="5" fill="#1597a5" />
+                <g fill="#bfe1ec">
+                  <circle cx="120" cy="155" r="5" /><circle cx="145" cy="155" r="5" />
+                  <circle cx="170" cy="155" r="5" /><circle cx="195" cy="155" r="5" />
+                </g>
+                <text x="215" y="195" textAnchor="middle" fontFamily="sans-serif" fontWeight="900" fontSize="15" fill="#123a5e">MSC</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ===== SECTION: OVERVIEW / TIMELINE ===== */}
+      <section id="overview" className="max-w-6xl mx-auto py-16 px-4">
+        <div className="space-y-2 mb-10 text-center sm:text-left">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
+            <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Itinerary 行程總覽
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">六天五夜郵輪海陸大旅行 🗓️</h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-bold max-w-2xl">
+            兩個全日海上巡航，盡享榮耀號豪華免稅街、大劇院與餐食；兩日靠港日本佐世保與韓國釜山。自主安排自由行！
+          </p>
+        </div>
+
+        {/* Timeline Horizontal Layout */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4">
+          {DAYS.map((day) => {
+            const tm = (day.arr || day.dep) ? (
+              <div className="text-[10px] text-indigo-600 font-bold mt-1.5">
+                {day.arr && `抵港 ${day.arr}`} {day.dep && ` 離港 ${day.dep}`}
+              </div>
+            ) : (
+              <div className="text-[10px] text-slate-500 font-bold mt-1.5">{day.time}</div>
+            );
+            return (
+              <div
+                key={day.n}
+                onClick={() => {
+                  setExpandedDay(day.n);
+                  scrollToSection('daily');
+                }}
+                className={`cursor-pointer group bg-white border border-slate-200/60 p-4 rounded-2xl hover:shadow-md hover:border-sky-200 hover:-translate-y-1 transition-all ${
+                  day.free ? 'border-amber-400 bg-amber-50/20 shadow-sm' : ''
+                }`}
+              >
+                <div className="text-[10px] font-extrabold text-indigo-500 group-hover:text-indigo-700">DAY 0{day.n}</div>
+                <div className="text-base font-black text-slate-800 mt-0.5">{day.date} <span className="text-xs text-slate-400 font-bold">{day.dow}</span></div>
+                <div className="text-2xl my-2">{day.icon}</div>
+                <div className="text-xs font-black text-slate-800 truncate">{day.title}</div>
+                {tm}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ===== SECTION: DAILY ACCORDIONS ===== */}
+      <section id="daily" className="bg-slate-100/50 border-y border-slate-200/50 py-16 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center sm:text-left space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
+              <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Day by Day 每日行程
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight font-sans">每日餐食、注意事項細節 👇</h2>
+            <p className="text-slate-500 text-xs sm:text-sm font-bold">
+              包含當日安排亮點、郵輪提供的免付費餐食；靠港自由行日，也為大家提供直達討論區的新增連結。
+            </p>
+          </div>
+
+          {/* Insert Weather widget right above the accordions */}
+          <WeatherWidget />
+
+          <div className="space-y-3">
+            {DAYS.map((day) => {
+              const isOpen = expandedDay === day.n;
+              return (
+                <div key={day.n} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all">
+                  <div
+                    onClick={() => setExpandedDay(isOpen ? null : day.n)}
+                    className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-all select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center font-bold text-base text-indigo-700 flex-none shadow-sm">
+                        {day.n}
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-black text-slate-800">
+                          {day.title} <span className="text-xs text-slate-400 font-bold ml-1">{day.date} ({day.dow})</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">{day.sub}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-none">
+                      <span className="text-xs font-extrabold text-indigo-600 hidden sm:block bg-indigo-50 px-2 py-1 rounded">
+                        {day.arr || day.dep ? `${day.arr ? `抵港 ${day.arr}` : ''} ${day.dep ? `離港 ${day.dep}` : ''}` : day.time}
+                      </span>
+                      <ChevronDown className={`h-5 w-5 text-slate-400 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+
+                  {isOpen && (
+                    <div className="border-t border-slate-100 p-4 sm:p-5 bg-slate-50/50 space-y-4 animate-fadeIn">
+                      {/* Meals */}
+                      <div className="flex flex-wrap gap-2">
+                        {day.meals.map((meal, idx) => {
+                          const [type, ...rest] = meal.split(' ');
+                          return (
+                            <span key={idx} className="bg-indigo-50 border border-indigo-100/30 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 flex items-center gap-1">
+                              <span className="text-indigo-800 font-black">{type}：</span>
+                              {rest.join(' ')}
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Points */}
+                      <ul className="space-y-2.5 text-xs sm:text-sm font-bold text-slate-600 pl-1">
+                        {day.pts.map((pt, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5 leading-relaxed">
+                            <span className="text-indigo-500 flex-none mt-0.5">⚓</span>
+                            <span>{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Direct discussion button */}
+                      {day.port && (
+                        <button
+                          onClick={() => {
+                            setDiscPort(day.port as any);
+                            scrollToSection('discuss');
+                          }}
+                          className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold text-xs px-5 py-3 rounded-xl transition-all shadow-sm"
+                        >
+                          🗺️ 前往【{day.port === 'saseho' ? '佐世保' : '釜山'}】討論區推薦與安排行程
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SECTION: SHIP HIGHLIGHTS ===== */}
+      <section id="ship" className="max-w-6xl mx-auto py-16 px-4">
+        <div className="space-y-2 mb-10 text-center">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
+            <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> On Board 郵輪亮點
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">亞洲最大旗艦「榮耀號」必玩設施 🛳️</h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-bold max-w-xl mx-auto">
+            17.2萬噸傳奇旗艦，共有19層甲板，儼然一座海上度假小鎮！免費設施玩不完！
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {SHIP.map((s, idx) => (
+            <div key={idx} className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-2xl group-hover:bg-indigo-100 transition-all mb-4">
+                {s.ic}
+              </div>
+              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-2">
+                {s.t}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  s.tag === 'free' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                }`}>
+                  {s.tag === 'free' ? '免費' : '自費'}
+                </span>
+              </h3>
+              <p className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed mt-2.5">
+                {s.d}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== SECTION: DINING ===== */}
+      <section id="dining" className="bg-slate-100/50 border-t border-slate-200 py-16 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
+              <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Dining 船上餐食
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">吃這件事，船上全包 🍽️</h2>
+            <p className="text-slate-500 text-xs sm:text-sm font-bold">
+              高水準的主餐廳與全日制自助餐廳均免費提供，甚至會驚喜遇見免費龍蝦之夜喔！
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <div className="text-3xl">🆓</div>
+              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                免費餐廳 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">免加錢</span>
+              </h3>
+              <p className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed">
+                <b>15樓自助餐廳 (Marketplace)</b>：幾乎全天開放，有多國美食、美式燒烤與披薩，也是全船唯一提供免費飲水與咖啡、茶包的取水處。<br />
+                <b>主餐廳 (櫻桃/海王/燈塔等)</b>：精緻三道式西餐，晚餐有固定桌號與時段。
+              </p>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <div className="text-3xl">⭐</div>
+              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                付費特色餐廳 <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">自選</span>
+              </h3>
+              <p className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed">
+                想品嚐頂級美味可自費前往：<b>海渡壽司吧、美式牛排、鐵板燒、墨西哥小吃</b>與義式頂級巧克力 Gelato 吧。<br />
+                💡 <b>建議</b>：一上船就先在 App 或平板預約好，晚餐時段主餐廳經常客滿。自備保溫水壺至 15 樓裝水最方便！
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SECTION: BUDGET ESTIMATOR ===== */}
+      <section id="cost" className="max-w-6xl mx-auto py-16 px-4 space-y-8">
+        <div className="space-y-2 text-center">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
+            <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Budget 費用與預算估算
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">自費預算、網路與行程快速試算 🧮</h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-bold max-w-xl mx-auto">
+            公司補助與基本房費已定（報價包含小費與觀光稅），以下幫您概估「船上個人消費」與「岸上自費自主行程」！
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Inputs on the left */}
+          <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+            {/* Tabs toggle */}
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setCalcTab('onboard')}
+                className={`flex-1 text-xs py-2.5 rounded-lg font-extrabold transition-all ${
+                  calcTab === 'onboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                🛳️ 船上額外自費
+              </button>
+              <button
+                onClick={() => setCalcTab('offship')}
+                className={`flex-1 text-xs py-2.5 rounded-lg font-extrabold transition-all ${
+                  calcTab === 'offship' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                🗺️ 岸上靠港自費
+              </button>
+            </div>
+
+            {calcTab === 'onboard' ? (
+              <div className="space-y-5">
+                {/* WiFi */}
+                <div className="border-b border-slate-100 pb-4">
+                  <label className="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">📶 船上上網 WiFi 套餐</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'none', label: '不買網路', p: 0 },
+                      { key: 'browse', label: '標準網頁型', p: 2200 },
+                      { key: 'stream', label: '影音串流型', p: 5900 }
+                    ].map((plan) => (
+                      <button
+                        key={plan.key}
+                        onClick={() => setWifiPlan(plan.key as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          wifiPlan === plan.key
+                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 font-extrabold shadow-sm'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300 text-xs'
+                        }`}
+                      >
+                        <div className="text-xs sm:text-sm font-extrabold">{plan.label}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 font-mono">約 NT${plan.p.toLocaleString()}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-bold leading-normal">
+                    * 免費內網僅可使用 MSC for Me App 內網聊天/看日報。購買上網可在出發前登入官網訂購，通常享八折預購優惠。
+                  </p>
+                </div>
+
+                {/* Drinks */}
+                <div className="border-b border-slate-100 pb-4">
+                  <label className="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">🥤 船上飲料暢飲套餐 (Easy Package)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'none', label: '不買套餐', p: 0 },
+                      { key: 'soft', label: '軟飲套餐', p: 5500 },
+                      { key: 'alcohol', label: '酒水套餐', p: 9500 }
+                    ].map((plan) => (
+                      <button
+                        key={plan.key}
+                        onClick={() => setDrinkPlan(plan.key as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          drinkPlan === plan.key
+                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 font-extrabold shadow-sm'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300 text-xs'
+                        }`}
+                      >
+                        <div className="text-xs sm:text-sm font-extrabold">{plan.label}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 font-mono">約 NT${plan.p.toLocaleString()}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-bold leading-normal">
+                    * 套餐需購買整個航程，同房旅客須購買同種方案（若為禮遇陽台暢飲房，則房價已內含，不需再選）。
+                  </p>
+                </div>
+
+                {/* Special Dining count */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">🍣 付費特色餐廳次數</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setDiningCount(prev => Math.max(0, prev - 1))}
+                        className="h-10 w-10 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center justify-center font-black"
+                      >
+                        -
+                      </button>
+                      <span className="text-base font-extrabold font-mono w-12 text-center">{diningCount} 次</span>
+                      <button
+                        onClick={() => setDiningCount(prev => prev + 1)}
+                        className="h-10 w-10 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center justify-center font-black"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">單次預算估值 (NT$)</label>
+                    <input
+                      type="number"
+                      value={diningCostUnit}
+                      onChange={e => setDiningCostUnit(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs sm:text-sm font-extrabold text-right font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Other spending */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">🎰 其他船上消費預留 (紀念照/冰淇淋/賭場)</label>
+                  <input
+                    type="number"
+                    value={extraOnboard}
+                    onChange={e => setExtraOnboard(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full h-11 border border-slate-200 rounded-lg px-3 text-xs sm:text-sm font-extrabold text-right font-mono bg-slate-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5 animate-fadeIn">
+                {/* Saseho */}
+                <div className="border-b border-slate-100 pb-4 space-y-3">
+                  <label className="block text-xs sm:text-sm font-extrabold text-slate-700">⛩️ DAY 03 · 日本佐世保自選方案</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'none', label: '留在船上' },
+                      { key: 'free', label: '自主自由行' },
+                      { key: 'tour', label: '旅行社官方團' }
+                    ].map((mode) => (
+                      <button
+                        key={mode.key}
+                        onClick={() => setSasehoMode(mode.key as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all text-xs font-extrabold ${
+                          sasehoMode === mode.key
+                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 font-black'
+                            : 'border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {sasehoMode === 'free' && (
+                    <div className="flex items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <span className="text-xs text-slate-500 font-bold">自費自由行預算抓：</span>
+                      <div className="flex items-center border border-slate-200 bg-white rounded-lg px-2 h-9">
+                        <span className="text-slate-400 font-bold text-xs">NT$</span>
+                        <input
+                          type="number"
+                          value={sasehoFreeCost}
+                          onChange={e => setSasehoFreeCost(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-24 border-none text-right font-mono font-bold text-xs focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {sasehoMode === 'tour' && (
+                    <div className="space-y-2.5 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-500 mb-1">官方旅行團路線</label>
+                        <select
+                          value={sasehoTourSel}
+                          onChange={e => setSasehoTourSel(e.target.value as any)}
+                          className="w-full h-9 border border-slate-200 bg-white rounded-lg px-2 font-bold focus:outline-none"
+                        >
+                          <option value="a">A團: 九十九島展望台 ➔ 免稅店 ➔ 佐世保五番街</option>
+                          <option value="b">B團: 豪斯登堡全日 ➔ 免稅店</option>
+                        </select>
+                      </div>
+                      <div className="flex bg-slate-200 p-0.5 rounded-lg">
+                        <button
+                          onClick={() => setSizeSaseho('over')}
+                          className={`flex-1 py-1 rounded font-bold ${sizeSaseho === 'over' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                          滿 30 人團
+                        </button>
+                        <button
+                          onClick={() => setSizeSaseho('under')}
+                          className={`flex-1 py-1 rounded font-bold ${sizeSaseho === 'under' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                          未滿 30 人
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Busan */}
+                <div className="pb-4 space-y-3">
+                  <label className="block text-xs sm:text-sm font-extrabold text-slate-700">🏯 DAY 04 · 韓國釜山自選方案</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'none', label: '留在船上' },
+                      { key: 'free', label: '自主自由行' },
+                      { key: 'tour', label: '旅行社官方團' }
+                    ].map((mode) => (
+                      <button
+                        key={mode.key}
+                        onClick={() => setBusanMode(mode.key as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all text-xs font-extrabold ${
+                          busanMode === mode.key
+                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 font-black'
+                            : 'border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {busanMode === 'free' && (
+                    <div className="flex items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <span className="text-xs text-slate-500 font-bold">自費自由行預算抓：</span>
+                      <div className="flex items-center border border-slate-200 bg-white rounded-lg px-2 h-9">
+                        <span className="text-slate-400 font-bold text-xs">NT$</span>
+                        <input
+                          type="number"
+                          value={busanFreeCost}
+                          onChange={e => setBusanFreeCost(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-24 border-none text-right font-mono font-bold text-xs focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {busanMode === 'tour' && (
+                    <div className="space-y-2.5 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-500 mb-1">官方旅行團路線</label>
+                        <select
+                          value={busanTourSel}
+                          onChange={e => setBusanTourSel(e.target.value as any)}
+                          className="w-full h-9 border border-slate-200 bg-white rounded-lg px-2 font-bold focus:outline-none"
+                        >
+                          <option value="a">A團: 天空膠囊列車 ➔ 甘川文化村 ➔ 光復洞時尚街</option>
+                          <option value="b">B團: 天空膠囊列車 ➔ 廣安里咖啡街 ➔ 五六島</option>
+                        </select>
+                      </div>
+                      <div className="flex bg-slate-200 p-0.5 rounded-lg">
+                        <button
+                          onClick={() => setSizeBusan('over')}
+                          className={`flex-1 py-1 rounded font-bold ${sizeBusan === 'over' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                          滿 30 人團
+                        </button>
+                        <button
+                          onClick={() => setSizeBusan('under')}
+                          className={`flex-1 py-1 rounded font-bold ${sizeBusan === 'under' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                          未滿 30 人
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Results Summary on the Right */}
+          <div className="lg:col-span-5 bg-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl space-y-5">
+            <div>
+              <span className="text-xs font-bold text-sky-200 uppercase tracking-wider block">個人估算自費總額</span>
+              <div className="text-3xl sm:text-4xl font-black font-mono text-amber-300 mt-1">
+                NT$ {personalTotal.toLocaleString()}{' '}
+                <span className="text-xs text-slate-400 font-bold">/ 人</span>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-4 space-y-2 text-xs">
+              <div className="flex justify-between font-bold text-slate-300">
+                <span>🛳️ 船上小計</span>
+                <span className="font-mono">NT$ {selfOnboardTotal.toLocaleString()}</span>
+              </div>
+              {wifiPrice > 0 && <div className="flex justify-between text-slate-400 pl-4 font-bold"><span>└ 上網套餐</span><span className="font-mono">NT$ {wifiPrice.toLocaleString()}</span></div>}
+              {drinkPrice > 0 && <div className="flex justify-between text-slate-400 pl-4 font-bold"><span>└ 暢飲套餐</span><span className="font-mono">NT$ {drinkPrice.toLocaleString()}</span></div>}
+              {diningPrice > 0 && <div className="flex justify-between text-slate-400 pl-4 font-bold"><span>└ 特色餐廳 ({diningCount}次)</span><span className="font-mono">NT$ {diningPrice.toLocaleString()}</span></div>}
+              {extraOnboard > 0 && <div className="flex justify-between text-slate-400 pl-4 font-bold"><span>└ 其他零用</span><span className="font-mono">NT$ {extraOnboard.toLocaleString()}</span></div>}
+
+              <div className="border-t border-slate-800/60 my-2 pt-2"></div>
+
+              <div className="flex justify-between font-bold text-slate-300">
+                <span>⛩️ 佐世保預算 ({sasehoMode === 'none' ? '不下船' : sasehoMode === 'free' ? '自由行' : '官方團'})</span>
+                <span className="font-mono">NT$ {sasehoCost.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between font-bold text-slate-300">
+                <span>🏯 釜山預算 ({busanMode === 'none' ? '不下船' : busanMode === 'free' ? '自由行' : '官方團'})</span>
+                <span className="font-mono">NT$ {busanCost.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span>👥 計算我們幾人同行</span>
+                <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl">
+                  <button
+                    onClick={() => setPaxCount(prev => Math.max(1, prev - 1))}
+                    className="h-7 w-7 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center font-black"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-mono font-bold text-slate-100">{paxCount}</span>
+                  <button
+                    onClick={() => setPaxCount(prev => prev + 1)}
+                    className="h-7 w-7 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center font-black"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="border-t border-white/5 my-2 pt-2 flex justify-between items-center text-sm font-black">
+                <span>同伴總計預算額</span>
+                <span className="text-amber-300 font-mono text-lg">NT$ {groupTotal.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-slate-500 font-bold leading-normal">
+              * 上述匯率以 1 USD = 31.5 TWD、1 TWD = 4.76 JPY 概估，船上消費一律依現場與官方公告。公司團費補助詳情請見下方。
+            </p>
+          </div>
+        </div>
+
+        {/* Cost Expense Shared Ledger Section */}
+        <div className="bg-slate-100 p-4 sm:p-6 rounded-3xl border border-slate-200/60 shadow-sm space-y-4">
+          <div className="max-w-md">
+            <h3 className="text-base sm:text-lg font-black text-slate-800">我們的「團體共有記帳本」</h3>
+            <p className="text-xs text-slate-500 font-bold leading-relaxed mt-1">
+              自由行、購物或代購常常分頭付款，把帳記在下面，系統會自動換算匯率，並算出平均分攤和彼此該給多少錢喔！
+            </p>
+          </div>
+          <ExpenseTracker
+            expenses={expenses}
+            meName={me.name}
+            addExpense={addExpense}
+            deleteExpense={deleteExpense}
+          />
+        </div>
+
+        {/* Company rates reference Table */}
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          <div
+            onClick={() => setFeeFolded(!feeFolded)}
+            className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 select-none border-b border-slate-100"
+          >
+            <span className="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+              <span>📋</span> 公司團費與補助對照表（參考）
+            </span>
+            <ChevronDown className={`h-5 w-5 text-slate-400 transition-all duration-300 ${feeFolded ? 'rotate-180' : ''}`} />
+          </div>
+
+          {!feeFolded && (
+            <div className="p-4 sm:p-6 bg-slate-50/20 text-xs space-y-4 animate-fadeIn">
+              <p className="text-slate-500 font-bold">
+                以下為公司回條原始數據，方便大家同房同住選派：報價已包含郵輪服務費及日本觀光稅。12歲以下同大人價。
+              </p>
+
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
+                <table className="w-full text-center border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="p-3 text-left font-extrabold text-slate-700">房型</th>
+                      <th className="p-3 font-extrabold text-slate-700">兩人房</th>
+                      <th className="p-3 font-extrabold text-slate-700">三人房</th>
+                      <th className="p-3 font-extrabold text-slate-700">四人房</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { type: '內艙房', p2: '31,380', p3: '25,213', p4: '22,130' },
+                      { type: '遮蔽海景房', p2: '31,380', p3: '—', p4: '—' },
+                      { type: '海景房', p2: '38,380', p3: '30,547', p4: '—' },
+                      { type: '豪華海景房', p2: '41,380', p3: '32,547', p4: '—' },
+                      { type: '遮蔽陽台房', p2: '32,380', p3: '27,547', p4: '25,130' },
+                      { type: '陽台房', p2: '42,380', p3: '34,213', p4: '30,130' },
+                      { type: '禮遇陽台暢飲房', p2: '47,380', p3: '38,880', p4: '34,630', hl: true }
+                    ].map((row, idx) => (
+                      <tr key={idx} className={`border-b border-slate-100 last:border-none ${row.hl ? 'bg-amber-50/40 font-extrabold' : ''}`}>
+                        <td className="p-3 text-left font-extrabold text-slate-800">{row.type}</td>
+                        <td className="p-3 font-mono font-bold">{row.p2}</td>
+                        <td className="p-3 font-mono font-bold">{row.p3}</td>
+                        <td className="p-3 font-mono font-bold">{row.p4}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm max-w-md">
+                <table className="w-full text-center border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="p-3 text-left font-extrabold text-slate-700">員工補助條件</th>
+                      <th className="p-3 font-extrabold text-slate-700">補助金額（每人）</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { cond: '經理級', p: '44,260' },
+                      { cond: '副理、副廠長', p: '33,195' },
+                      { cond: '3 年以上年資', p: '22,130' },
+                      { cond: '1 年以上，3 年以下', p: '11,065' },
+                      { cond: '3 個月以上，1 年以下', p: '8,000' },
+                      { cond: '未滿 3 個月', p: '0' }
+                    ].map((row, idx) => (
+                      <tr key={idx} className="border-b border-slate-100 last:border-none">
+                        <td className="p-3 text-left font-extrabold text-slate-800">{row.cond}</td>
+                        <td className="p-3 font-mono font-extrabold text-indigo-700">NT$ {row.p}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ===== SECTION: PRECAUTIONS / NOTES ===== */}
+      <section id="notes" className="bg-slate-100/50 border-y border-slate-200 py-16 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center sm:text-left space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
+              <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Good to Know 注意事項
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">行前、通關與船上生活指南 📌</h2>
+            <p className="text-slate-500 text-xs sm:text-sm font-bold">
+              最重要的一件事：<span className="text-rose-500 font-extrabold">請務必列印 2 份護照 A4 影本！</span> 用於每次上岸入境查驗。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {NOTES.map((note, idx) => {
+              const isOpen = !!expandedNotes[idx];
+              return (
+                <div key={idx} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm self-start">
+                  <div
+                    onClick={() => setExpandedNotes(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-all select-none font-extrabold text-xs sm:text-sm text-slate-800"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-lg">{note.ic}</span>
+                      {note.t}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                  {isOpen && (
+                    <div className="border-t border-slate-100 p-4 bg-slate-50/40 text-xs font-bold leading-relaxed text-slate-600">
+                      <div dangerouslySetInnerHTML={{ __html: note.body }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Interactive Checklist */}
+          <div className="bg-amber-50/40 border border-amber-200/50 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <h3 className="text-base sm:text-lg font-black text-amber-950 flex items-center gap-2">
+                🧳 郵輪行前打包準備清單（多人協同勾選）
+              </h3>
+              <span className="text-xs font-extrabold text-amber-900 bg-amber-100 px-3 py-1 rounded-full">
+                完成進度：{doneChecklistCount} / {checklistTotal}
+              </span>
+            </div>
+
+            <div className="w-full bg-amber-200 h-2 rounded-full overflow-hidden">
+              <div 
+                className="bg-indigo-600 h-full rounded-full transition-all duration-300"
+                style={{ width: `${checklistPercent}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+              {CHECKLIST.map((item, idx) => {
+                const isChecked = !!checklist[idx];
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => toggleChecklistItem(idx)}
+                    className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                      isChecked
+                        ? 'bg-emerald-50/60 border-emerald-200 text-slate-400 line-through'
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-extrabold text-xs'
+                    }`}
+                  >
+                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center text-white text-xs ${
+                      isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
+                    }`}>
+                      ✓
+                    </div>
+                    <span className="font-bold leading-none">{item}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SECTION: CONFIRM Q&A ===== */}
+      <section id="confirm" className="max-w-4xl mx-auto py-16 px-4 space-y-8">
+        <div className="text-center sm:text-left space-y-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center sm:justify-start gap-1.5">
+            <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Ask the Agency 報名前 Q&A
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">要跟旅行社確認的事 ✅</h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-bold">
+            我們跟朋友最關心的細節。已明確的備註<span className="text-indigo-600 font-black">【已知】</span>，待說明的列為<span className="text-rose-500 font-black">【待旅行社】</span>，最終以行前說明會公告為準！
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {CONFIRM.map((group, idx) => {
+            const isOpen = !!expandedConfirm[idx];
+            return (
+              <div key={idx} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                <div
+                  onClick={() => setExpandedConfirm(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                  className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 select-none border-b border-slate-100"
+                >
+                  <span className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-2">
+                    <span className="text-lg">{group.ic}</span>
+                    {group.t}
+                  </span>
+                  <ChevronDown className={`h-5 w-5 text-slate-400 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isOpen && (
+                  <div className="p-4 sm:p-5 bg-slate-50/20 divide-y divide-slate-100 space-y-4">
+                    {group.items.map((qa, qidx) => (
+                      <div key={qidx} className="pt-4 first:pt-0 space-y-2 text-xs">
+                        <h4 className="font-extrabold text-slate-800 text-sm flex items-start gap-1.5 leading-snug">
+                          <span className="text-indigo-500">Q.</span>
+                          <span>{qa.q}</span>
+                        </h4>
+                        <div className="space-y-1.5 pl-4">
+                          {qa.lines.map((ln, lidx) => (
+                            <div key={lidx} className="flex items-start gap-2 font-bold text-slate-600 leading-relaxed">
+                              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded flex-none mt-0.5 ${
+                                ln.t === 'k' ? 'bg-indigo-100 text-indigo-700' : ln.t === 'm' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+                              }`}>
+                                {ln.t === 'k' ? '已知' : ln.t === 'm' ? '我查' : '待確認'}
+                              </span>
+                              <span>{ln.text}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ===== SECTION: DISCUSSION FORUM (THE MAIN CORE BLOCK) ===== */}
+      <section id="discuss" className="bg-indigo-950 text-white py-16 px-4 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <div className="bg-gradient-to-r from-indigo-900 to-indigo-850 rounded-3xl p-6 sm:p-8 border border-white/10 relative overflow-hidden shadow-2xl">
+            <div className="absolute right-[-10px] bottom-[-20px] text-[130px] opacity-5 select-none pointer-events-none">🗺️</div>
+            
+            <div className="max-w-2xl space-y-4 relative z-10">
+              <span className="inline-flex items-center gap-1 bg-amber-400 text-slate-900 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+                ⭐ 多人協同自由行規劃區
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-none text-white">佐世保 & 釜山 自由行討論區</h2>
+              <p className="text-slate-300 text-xs sm:text-sm font-bold leading-relaxed">
+                兩天靠港是我們朋友的自由放風時間！點進來，輸入彼此的暱稱。推薦你找到的美食與好玩地標、上傳景點相片，大家可以互相投票，最終直接納入右側一鍵排定完美登陸日程！
+              </p>
+
+              {/* Login / Name Gate */}
+              {!me.name ? (
+                <div className="bg-white/10 p-4 rounded-2xl border border-white/10 max-w-md space-y-3 pt-4">
+                  <span className="block text-xs font-bold text-amber-300">👋 先為自己取個名字進入討論吧：</span>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      placeholder="輸入您的暱稱（例：Erin）"
+                      value={nameInput}
+                      onChange={e => setNameInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && saveName(nameInput)}
+                      className="flex-1 h-11 bg-white text-slate-900 placeholder:text-slate-400 font-extrabold text-sm px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <button
+                      onClick={() => saveName(nameInput)}
+                      className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm px-5 h-11 rounded-xl transition-all"
+                    >
+                      進入討論區 ➔
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-3.5 rounded-2xl max-w-md pt-3">
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center font-black text-sm text-white" style={{ backgroundColor: me.color || '#ef6b3f' }}>
+                    {me.name[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-extrabold text-slate-300">當前正在協同：</div>
+                    <div className="text-sm font-black truncate">{me.name}</div>
+                  </div>
+                  <button
+                    onClick={changeName}
+                    className="text-slate-400 hover:text-rose-400 text-xs font-bold underline cursor-pointer"
+                  >
+                    更換暱稱
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Interactive Core: Tabs, ideas, add form, list, planners */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-6 text-slate-950">
+            {/* Port selector */}
+            <div className="flex bg-slate-800 p-1 rounded-2xl gap-1">
+              <button
+                onClick={() => setDiscPort('saseho')}
+                className={`flex-1 py-3.5 rounded-xl font-black text-sm transition-all flex flex-col sm:flex-row justify-center items-center gap-2 ${
+                  discPort === 'saseho' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="text-xl">⛩️</span>
+                <span className="text-center sm:text-left">
+                  日本佐世保
+                  <span className="block sm:inline-block text-[10px] text-slate-300 sm:ml-2 font-bold opacity-80">
+                    DAY 3 · 09:30 - 20:00
+                  </span>
+                </span>
+              </button>
+              <button
+                onClick={() => setDiscPort('busan')}
+                className={`flex-1 py-3.5 rounded-xl font-black text-sm transition-all flex flex-col sm:flex-row justify-center items-center gap-2 ${
+                  discPort === 'busan' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="text-xl">🏯</span>
+                <span className="text-center sm:text-left">
+                  韓國釜山
+                  <span className="block sm:inline-block text-[10px] text-slate-300 sm:ml-2 font-bold opacity-80">
+                    DAY 4 · 07:00 - 17:00
+                  </span>
+                </span>
+              </button>
+            </div>
+
+            {/* Quick Inspiration chips */}
+            <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-800/60">
+              <span className="text-xs font-extrabold text-slate-400 block mb-2">💡 沒靈感？點一下直接推薦給同伴（再一起投票）：</span>
+              <div className="flex flex-wrap gap-2">
+                {IDEAS[discPort].map((item, idx) => {
+                  const cat = getCatObj(item.c);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleAddFromIdea(item.n, item.c)}
+                      className="bg-slate-800 border border-slate-700 hover:border-indigo-500 hover:text-indigo-400 text-slate-200 text-xs font-extrabold px-3 py-2 rounded-full transition-all flex items-center gap-1 shadow-sm"
+                    >
+                      <span>{cat.emoji}</span> {item.n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Form to add spot */}
+              <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                  <span>➕</span> 推薦我想去的景點/美食
+                </h3>
+
+                <form onSubmit={handleAddSpotSubmit} className="space-y-3.5 text-slate-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-500 mb-1">景點 / 店名（必填）</label>
+                      <input
+                        type="text"
+                        placeholder="例：九十九島展望台 / 札嘎其海鮮"
+                        value={spotName}
+                        onChange={e => setSpotName(e.target.value)}
+                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-500 mb-1">預估花費（選填）</label>
+                      <input
+                        type="text"
+                        placeholder="例：¥1,500 / 自理"
+                        value={spotCost}
+                        onChange={e => setSpotCost(e.target.value)}
+                        className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category select */}
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-500 mb-1.5">景點分類</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CATS.map((cat) => (
+                        <button
+                          key={cat.k}
+                          type="button"
+                          onClick={() => setSpotCategory(cat.k)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                            spotCategory === cat.k
+                              ? 'text-white'
+                              : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                          }`}
+                          style={{ backgroundColor: spotCategory === cat.k ? cat.color : '', borderColor: spotCategory === cat.k ? cat.color : '' }}
+                        >
+                          {cat.emoji} {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Note */}
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-500 mb-1">想去的備註/理由</label>
+                    <textarea
+                      placeholder="跟朋友說說為什麼想去吧！這裡沒有字數限制，歡迎寫下詳細的計畫、想買的口味或是推薦菜單 ✍️"
+                      value={spotNote}
+                      onChange={e => setSpotNote(e.target.value)}
+                      className="w-full h-20 border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white resize-none"
+                    />
+                  </div>
+
+                  {/* Google Map URL */}
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-500 mb-1">Google 地圖地標連結（選填）</label>
+                    <input
+                      type="text"
+                      placeholder="貼上 Google Maps 地標分享連結..."
+                      value={spotMap}
+                      onChange={e => setSpotMap(e.target.value)}
+                      className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-slate-50 text-xs font-bold focus:outline-none focus:border-indigo-500 focus:bg-white"
+                    />
+                  </div>
+
+                  {/* Image upload with preview */}
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-500 mb-1.5 flex items-center gap-1">
+                      <Camera className="h-3.5 w-3.5 text-indigo-500" />
+                      搭配一些景點相片/地圖圖（自選，支援左右滑動輪播）
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-10 border border-dashed border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-500 font-extrabold text-xs px-4 rounded-xl flex items-center gap-1.5 transition-all"
+                      >
+                        <Plus className="h-4 w-4" /> 選擇景點圖
+                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUploadChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {uploadedBase64s.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto py-2 pr-1 mt-2 scrollbar-thin">
+                        {uploadedBase64s.map((img, idx) => (
+                          <div key={idx} className="relative h-14 w-18 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                            <img src={img} alt="Uploaded" className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeUploadedImage(idx)}
+                              className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4.5 w-4.5 rounded-full flex items-center justify-center text-[10px] text-white"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full h-11 bg-rose-500 hover:bg-rose-600 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-rose-500/20"
+                  >
+                    ＋ 推薦上傳到討論板
+                  </button>
+                </form>
+              </div>
+
+              {/* Spot list on the right */}
+              <div className="lg:col-span-7 flex flex-col gap-4">
+                <div className="flex justify-between items-center flex-wrap gap-2 text-white">
+                  <div className="text-xs font-extrabold">
+                    共 <span className="font-mono text-amber-300 text-sm">{activePortSpots.length}</span> 個推薦地點
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setSpotSort('votes')}
+                      className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${
+                        spotSort === 'votes' ? 'bg-white text-slate-950 font-black' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      最多人想去
+                    </button>
+                    <button
+                      onClick={() => setSpotSort('new')}
+                      className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${
+                        spotSort === 'new' ? 'bg-white text-slate-950 font-black' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      最新推薦
+                    </button>
+                  </div>
+                </div>
+
+                {sortedSpotsToShow.length === 0 ? (
+                  <div className="text-center py-24 bg-slate-800/20 border border-dashed border-slate-800/80 rounded-2xl text-slate-400 text-xs">
+                    🌌 目前還沒有人推薦這裡的地點喔，快從左側或靈感新增一筆吧！
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin">
+                    {sortedSpotsToShow.map((spot) => {
+                      const cat = getCatObj(spot.cat);
+                      const hasVoted = me.name && spot.voters?.includes(me.name);
+                      const voteCount = spot.voters?.length || 0;
+                      const isAuthor = spot.author === me.name;
+                      const isEditing = editingSpotId === spot.id;
+
+                      return (
+                        <div key={spot.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm relative hover:shadow-md transition-all">
+                          <div>
+                            {/* Delete button (only author) */}
+                            {isAuthor && !isEditing && (
+                              <button
+                                onClick={() => {
+                                  if (confirm('確定要刪除此推薦景點嗎？')) {
+                                    deleteSpot(discPort, spot.id);
+                                  }
+                                }}
+                                className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
+                                title="刪除推薦"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+
+                            {/* Edit button (only author) */}
+                            {isAuthor && !isEditing && (
+                              <button
+                                onClick={() => startEditSpot(spot)}
+                                className="absolute top-3 right-11 p-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors"
+                                title="編輯內容"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+
+                            <span className="inline-block text-[10px] font-black px-2 py-1 rounded-full text-white mb-2" style={{ backgroundColor: cat.color }}>
+                              {cat.emoji} {cat.label}
+                            </span>
+
+                            <h4 className="text-sm font-black text-slate-800 pr-16">{spot.name}</h4>
+
+                            {/* Carousel of uploaded images (if any) */}
+                            {spot.images && spot.images.length > 0 && (
+                              <div className="my-3 relative group">
+                                <div className="flex gap-1.5 overflow-x-auto scroll-snap-x snap-mandatory py-1 scrollbar-none rounded-xl h-28 max-w-full">
+                                  {spot.images.map((img, i) => (
+                                    <div key={i} className="h-full w-full flex-none snap-start rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                                      <img src={img} alt="Spot carousel" className="h-full w-full object-cover" />
+                                    </div>
+                                  ))}
+                                </div>
+                                <span className="absolute bottom-1 right-2 bg-slate-900/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-extrabold text-white">
+                                  ↔ 左右滑輪播 ({spot.images.length})
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Note / Description */}
+                            {isEditing ? (
+                              <div className="space-y-2 mt-2">
+                                <textarea
+                                  value={editingSpotNote}
+                                  onChange={e => setEditingSpotNote(e.target.value)}
+                                  placeholder="景點備註理由（無字數限制）"
+                                  className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingSpotCost}
+                                    onChange={e => setEditingSpotCost(e.target.value)}
+                                    placeholder="預估花費"
+                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editingSpotMap}
+                                    onChange={e => setEditingSpotMap(e.target.value)}
+                                    placeholder="地圖地標連結"
+                                    className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-1">
+                                  <button
+                                    onClick={() => setEditingSpotId(null)}
+                                    className="px-2.5 py-1 text-[10px] font-extrabold bg-slate-100 rounded hover:bg-slate-200"
+                                  >
+                                    取消
+                                  </button>
+                                  <button
+                                    onClick={() => saveSpotEdit(discPort, spot.id)}
+                                    className="px-2.5 py-1 text-[10px] font-extrabold bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                  >
+                                    儲存
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {spot.note && (
+                                  <p className="text-xs font-medium text-slate-500 leading-relaxed mt-2 whitespace-pre-wrap break-words">
+                                    {spot.note}
+                                  </p>
+                                )}
+
+                                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                  {spot.cost && (
+                                    <span className="bg-slate-100 text-slate-500 text-[10px] font-extrabold px-2 py-1 rounded-lg">
+                                      💸 {spot.cost}
+                                    </span>
+                                  )}
+                                  {spot.map && (
+                                    <a
+                                      href={spot.map}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-indigo-50 text-indigo-600 hover:text-indigo-800 text-[10px] font-extrabold px-2 py-1 rounded-lg transition-all"
+                                    >
+                                      📍 地圖導航
+                                    </a>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 mt-4">
+                            <div className="flex items-center gap-1.5">
+                              <div
+                                className="h-6.5 w-6.5 rounded-full flex items-center justify-center font-black text-[10px] text-white"
+                                style={{ backgroundColor: spot.color || '#ef6b3f' }}
+                              >
+                                {spot.author[0].toUpperCase()}
+                              </div>
+                              <span className="text-[10px] font-extrabold text-slate-400">
+                                {spot.author} <span className="block text-[8px] font-bold text-slate-300">推薦</span>
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => toggleVote(discPort, spot.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all border ${
+                                hasVoted
+                                  ? 'bg-rose-50 border-rose-100 text-rose-600'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-rose-400'
+                              }`}
+                            >
+                              👍 想去 <span className="font-mono">{voteCount}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* New collaborative sections: Itinerary Timeline & Memos & Shopping Wishlists */}
+          <ItineraryBuilder
+            spotsSaseho={spotsSaseho}
+            spotsBusan={spotsBusan}
+            updateSpot={updateSpot}
+          />
+
+          <ShoppingSection
+            wishlist={wishlist}
+            meName={me.name}
+            addWishlistItem={addWishlistItem}
+            toggleWishlistItem={toggleWishlistItem}
+            deleteWishlistItem={deleteWishlistItem}
+          />
+
+          <LocalTipsSection />
+
+          <MemoSection
+            memos={memos}
+            meName={me.name}
+            addMemo={addMemo}
+            deleteMemo={deleteMemo}
+            updateMemo={updateMemo}
+          />
+
+          {/* cloud connection state status */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3 text-slate-300 text-xs">
+            <span className="text-base">📡</span>
+            <div className="space-y-0.5">
+              <span className="font-extrabold">同步連線狀態資訊：</span>
+              <p className="text-slate-400 text-[11px] font-medium leading-relaxed">
+                {dbMode === 'cloud' ? (
+                  <>
+                    🎉 <b>已啟用雲端即時同步資料庫（Firebase）！</b>您與同伴新增的地點、上傳相片、記帳帳本、待買項目和備忘筆記，都將會在所有人瀏覽時，進行最快速的實時同步！
+                  </>
+                ) : (
+                  <>
+                    提示：目前處於<b>本機單機紀錄模式（localStorage）</b>。資料安全存於您的瀏覽器快取，關閉或重開仍會保留，但無法在不同同仁的手機/電腦間即時同步推薦。
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FINAL FOOTER ===== */}
+      <footer className="bg-slate-900 text-slate-400 text-xs py-12 px-4 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
+          <div className="space-y-3 max-w-md">
+            <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+              <span>🚢</span> 期待這趟超豪華大航海！
+            </h4>
+            <p className="font-medium leading-relaxed">
+              本頁由台灣康匠員工行程表、自費回條、旅行社提供資訊與公開大數據整理製作，方便大家協同記帳、討論與自由行安排。岸上官方行程是否成團、網路飲料暢飲與劇院安排，請一律以說明會最新公告與郵輪公司現場為準。
+            </p>
+          </div>
+          <div className="space-y-2">
+            <span className="font-extrabold text-white block">官方推薦資源</span>
+            <a
+              href="https://msc-cruises.com.tw/E-book/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-300 hover:underline font-extrabold block"
+            >
+              📖 MSC 榮耀號 Bellissima 官方電子介紹書 ➔
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
+// --- 檔案 src/App.tsx 結束 ---

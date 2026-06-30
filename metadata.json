@@ -1,0 +1,6 @@
+{
+  "name": "康匠郵輪之旅討論區與行程表",
+  "description": "台灣康匠115年員工旅遊佐世保與釜山郵輪之旅互動式行程與協同規劃討論板，支援即時景點討論、記帳、氣象、自訂行程與備忘錄。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
