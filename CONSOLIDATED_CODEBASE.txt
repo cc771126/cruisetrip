@@ -1,6 +1,6 @@
 ========================================================================
    🚢  MSC 榮耀號郵輪行程討論協同網頁 - 完整專案原始碼單一文件存檔  🚢
-   產生時間: 2026/6/30 下午5:12:37
+   產生時間: 2026/6/30 下午5:20:58
 ========================================================================
 
 親愛的康匠夥伴您好！這份文件將整套 React + Firebase 協同網頁的所有核心程式碼，
@@ -83,7 +83,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './', // Ensures relative asset paths so it works perfectly on GitHub Pages subdirectories!
+    base: '/cruisetrip/', // Ensures perfect routing and asset resolution on GitHub Pages subdirectory (/cruisetrip/)!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -145,7 +145,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-size: '20'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies

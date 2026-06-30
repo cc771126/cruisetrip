@@ -205,7 +205,7 @@ import {defineConfig} from &#039;vite&#039;;
 
 export default defineConfig(() =&gt; {
   return {
-    base: &#039;./&#039;, // Ensures relative asset paths so it works perfectly on GitHub Pages subdirectories!
+    base: &#039;/cruisetrip/&#039;, // Ensures perfect routing and asset resolution on GitHub Pages subdirectory (/cruisetrip/)!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -266,7 +266,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-size: &#039;20&#039;
+          node-version: &#039;20&#039;
           cache: &#039;npm&#039;
 
       - name: Install dependencies

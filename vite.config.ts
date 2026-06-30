@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './', // Ensures relative asset paths so it works perfectly on GitHub Pages subdirectories!
+    base: '/cruisetrip/', // Ensures perfect routing and asset resolution on GitHub Pages subdirectory (/cruisetrip/)!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
