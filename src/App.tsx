@@ -13,7 +13,7 @@ import {
 
 import { DAYS, SHIP, NOTES, CONFIRM, CHECKLIST, CATS, IDEAS, TOUR } from './data';
 import { Spot, Expense, Memo, WishlistItem } from './types';
-import { useCollaborativeState } from './hooks/useCollaborativeState';
+import { useCollaborativeState, colorFor } from './hooks/useCollaborativeState';
 
 // Subcomponents
 import WeatherWidget from './components/WeatherWidget';
@@ -99,12 +99,14 @@ export default function App() {
   const [uploadedBase64s, setUploadedBase64s] = useState<string[]>([]);
   const [spotSort, setSpotSort] = useState<'votes' | 'new'>('votes');
   const [nameInput, setNameInput] = useState('');
+  const [checklistNameInput, setChecklistNameInput] = useState('');
 
   // In-place Spot Editing state
   const [editingSpotId, setEditingSpotId] = useState<string | null>(null);
   const [editingSpotNote, setEditingSpotNote] = useState<string>('');
   const [editingSpotMap, setEditingSpotMap] = useState<string>('');
   const [editingSpotCost, setEditingSpotCost] = useState<string>('');
+  const [editingSpotImages, setEditingSpotImages] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,6 +199,61 @@ export default function App() {
     setUploadedBase64s(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleEditImageUploadChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const base64Promises = Array.from(files).map((file: File) => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 300;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(dataUrl);
+          };
+          img.onerror = (e) => reject(e);
+        };
+        reader.onerror = (e) => reject(e);
+      });
+    });
+
+    try {
+      const results = await Promise.all(base64Promises);
+      setEditingSpotImages(prev => [...prev, ...results]);
+    } catch (err) {
+      alert('圖片上傳失敗，請重試！');
+    }
+  };
+
+  const removeEditingSpotImage = (index: number) => {
+    setEditingSpotImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Spot add submit
   const handleAddSpotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,6 +320,7 @@ export default function App() {
     setEditingSpotNote(spot.note);
     setEditingSpotMap(spot.map);
     setEditingSpotCost(spot.cost);
+    setEditingSpotImages(spot.images || []);
   };
 
   const saveSpotEdit = async (port: 'saseho' | 'busan', spotId: string) => {
@@ -274,7 +332,8 @@ export default function App() {
     await updateSpot(port, spotId, {
       note: editingSpotNote.trim(),
       map: mapUrl,
-      cost: editingSpotCost.trim()
+      cost: editingSpotCost.trim(),
+      images: editingSpotImages
     });
 
     setEditingSpotId(null);
@@ -310,10 +369,24 @@ export default function App() {
   const activePortSpots = discPort === 'saseho' ? spotsSaseho : spotsBusan;
   const sortedSpotsToShow = getSortedSpots(activePortSpots);
 
-  // Count done checklist items
-  const doneChecklistCount = Object.values(checklist).filter(Boolean).length;
+  // Helper to parse checklist checked users
+  const getCheckedUsers = (idx: number): string[] => {
+    const val = checklist[idx];
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'boolean') return val ? ["全員"] : [];
+    return [];
+  };
+
+  // Count done checklist items for me specifically
+  const myDoneChecklistCount = me.name
+    ? CHECKLIST.filter((_, idx) => getCheckedUsers(idx).includes(me.name!)).length
+    : Object.keys(checklist).filter(idx => {
+        const users = getCheckedUsers(Number(idx));
+        return users.length > 0;
+      }).length;
+
   const checklistTotal = CHECKLIST.length;
-  const checklistPercent = checklistTotal > 0 ? (doneChecklistCount / checklistTotal) * 100 : 0;
+  const checklistPercent = checklistTotal > 0 ? (myDoneChecklistCount / checklistTotal) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-[#f3fafc] text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -328,31 +401,6 @@ export default function App() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 overflow-x-auto py-1">
-            {[
-              { id: 'overview', label: '行程總覽' },
-              { id: 'daily', label: '每日行程' },
-              { id: 'ship', label: '郵輪亮點' },
-              { id: 'dining', label: '船上餐食' },
-              { id: 'cost', label: '費用估算' },
-              { id: 'notes', label: '注意事項' },
-              { id: 'confirm', label: '旅行社Q&A' },
-              { id: 'discuss', label: '自由行討論區' }
-            ].map((section) => (
-              <button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                className={`text-xs font-extrabold px-3 py-2 rounded-full transition-all ${
-                  activeSection === section.id
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-200/50 hover:text-indigo-600'
-                }`}
-              >
-                {section.label}
-              </button>
-            ))}
-          </div>
-
           <button
             onClick={() => scrollToSection('discuss')}
             className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-full shadow-md shadow-rose-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1"
@@ -361,30 +409,36 @@ export default function App() {
           </button>
         </div>
 
-        {/* Mobile Swipeable Anchor Bar */}
-        <div className="flex md:hidden items-center gap-2 overflow-x-auto px-4 pb-3 pt-0.5 border-t border-sky-100/40 scrollbar-none snap-x snap-mandatory">
-          {[
-            { id: 'overview', label: '行程總覽' },
-            { id: 'daily', label: '每日行程' },
-            { id: 'ship', label: '郵輪亮點' },
-            { id: 'dining', label: '船上餐食' },
-            { id: 'cost', label: '費用估算' },
-            { id: 'notes', label: '注意事項' },
-            { id: 'confirm', label: '旅行社Q&A' },
-            { id: 'discuss', label: '自由行討論區' }
-          ].map((section) => (
-            <button
-              key={section.id}
-              onClick={() => scrollToSection(section.id)}
-              className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
-                activeSection === section.id
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-indigo-600'
-              }`}
-            >
-              {section.label}
-            </button>
-          ))}
+        {/* Unified Scrollable Anchor Bar (Visible on both desktop & mobile with sleek custom scrollbar!) */}
+        <div className="border-t border-sky-100/40 bg-white/95 backdrop-blur-sm py-2 px-4 overflow-x-auto flex items-center [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-sky-200/60 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-sky-300 scrollbar-thin scroll-smooth snap-x snap-mandatory">
+          <div className="max-w-6xl mx-auto w-full flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:none">
+            {[
+              { id: 'overview', label: '行程總覽' },
+              { id: 'daily', label: '每日行程' },
+              { id: 'ship', label: '郵輪亮點' },
+              { id: 'dining', label: '船上餐食' },
+              { id: 'cost', label: '費用估算' },
+              { id: 'notes', label: '注意事項' },
+              { id: 'confirm', label: '旅行社Q&A' },
+              { id: 'discuss', label: '討論區' },
+              { id: 'itinerary-plan', label: '終極排程' },
+              { id: 'shopping-list', label: '代購待買' },
+              { id: 'local-tips', label: '避坑叮嚀' },
+              { id: 'memo-board', label: '協同筆記' }
+            ].map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`text-[11px] sm:text-xs font-extrabold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
+                  activeSection === section.id
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
         </div>
       </nav>
 
@@ -1170,7 +1224,7 @@ export default function App() {
                 🧳 郵輪行前打包準備清單（多人協同勾選）
               </h3>
               <span className="text-xs font-extrabold text-amber-900 bg-amber-100 px-3 py-1 rounded-full">
-                完成進度：{doneChecklistCount} / {checklistTotal}
+                {me.name ? `【${me.name}】的進度：${myDoneChecklistCount} / ${checklistTotal}` : `完成進度：${myDoneChecklistCount} / ${checklistTotal}`}
               </span>
             </div>
 
@@ -1181,25 +1235,95 @@ export default function App() {
               />
             </div>
 
+            {/* Sub Nickname gate inside Checklist */}
+            {!me.name ? (
+              <div className="bg-amber-100/60 p-4 rounded-2xl border border-amber-200/50 flex flex-col sm:flex-row items-center gap-3 justify-between">
+                <span className="text-xs font-black text-amber-900">
+                  👋 填寫您的暱稱，即可各自勾選、統計「我個人的準備清單」喔！
+                </span>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    placeholder="例如：Erin"
+                    value={checklistNameInput}
+                    onChange={e => setChecklistNameInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveName(checklistNameInput)}
+                    className="flex-1 sm:w-40 bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-850 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <button
+                    onClick={() => saveName(checklistNameInput)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-1.5 rounded-xl transition-all whitespace-nowrap"
+                  >
+                    進入
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-emerald-50/60 border border-emerald-100/40 p-3 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full flex items-center justify-center font-black text-[10px] text-white" style={{ backgroundColor: me.color || '#ef6b3f' }}>
+                    {me.name[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="font-extrabold text-slate-700">當前正在準備【{me.name}】的專屬行李打包清單</span>
+                </div>
+                <button
+                  onClick={changeName}
+                  className="text-indigo-600 hover:text-indigo-700 font-extrabold underline cursor-pointer"
+                >
+                  切換使用者
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {CHECKLIST.map((item, idx) => {
-                const isChecked = !!checklist[idx];
+                const checkedUsers = getCheckedUsers(idx);
+                const isCheckedByMe = me.name ? checkedUsers.includes(me.name) : false;
+
                 return (
                   <div
                     key={idx}
-                    onClick={() => toggleChecklistItem(idx)}
-                    className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                      isChecked
-                        ? 'bg-emerald-50/60 border-emerald-200 text-slate-400 line-through'
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-extrabold text-xs'
+                    onClick={() => {
+                      if (!me.name) {
+                        alert("請先在下方或本區塊頂部輸入暱稱，即可進行個人化打包勾選！");
+                        return;
+                      }
+                      toggleChecklistItem(idx);
+                    }}
+                    className={`p-3.5 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all ${
+                      isCheckedByMe
+                        ? 'bg-emerald-50/60 border-emerald-200'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center text-white text-xs ${
-                      isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
-                    }`}>
-                      ✓
+                    <div className="flex items-center gap-3">
+                      <div className={`h-5 w-5 rounded-md border flex items-center justify-center text-white text-xs flex-shrink-0 ${
+                        isCheckedByMe ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
+                      }`}>
+                        ✓
+                      </div>
+                      <span className={`font-extrabold text-xs leading-snug flex-1 ${
+                        isCheckedByMe ? 'text-slate-400 line-through' : 'text-slate-700'
+                      }`}>
+                        {item}
+                      </span>
                     </div>
-                    <span className="font-bold leading-none">{item}</span>
+
+                    {/* Show checked members */}
+                    {checkedUsers.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pl-8 pt-0.5">
+                        <span className="text-[10px] font-extrabold text-slate-400">已打包：</span>
+                        {checkedUsers.map((user, uidx) => (
+                          <span
+                            key={uidx}
+                            style={{ backgroundColor: colorFor(user) }}
+                            className="text-[9px] font-black text-white px-2 py-0.5 rounded-full shadow-sm"
+                          >
+                            {user}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1600,6 +1724,7 @@ export default function App() {
                                   onChange={e => setEditingSpotNote(e.target.value)}
                                   placeholder="景點備註理由（無字數限制）"
                                   className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
+                                  rows={3}
                                 />
                                 <div className="grid grid-cols-2 gap-2">
                                   <input
@@ -1617,6 +1742,45 @@ export default function App() {
                                     className="w-full text-[10px] p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-bold"
                                   />
                                 </div>
+
+                                {/* Editing Spot Images */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => document.getElementById(`edit-file-${spot.id}`)?.click()}
+                                      className="py-1 px-2.5 border border-dashed border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-500 font-extrabold text-[10px] rounded-lg flex items-center gap-1 transition-all"
+                                    >
+                                      <Plus className="h-3 w-3" /> 編輯景點相片
+                                    </button>
+                                    <input
+                                      type="file"
+                                      id={`edit-file-${spot.id}`}
+                                      accept="image/*"
+                                      multiple
+                                      onChange={handleEditImageUploadChange}
+                                      className="hidden"
+                                    />
+                                  </div>
+
+                                  {editingSpotImages.length > 0 && (
+                                    <div className="flex gap-1.5 overflow-x-auto py-1 pr-1 scrollbar-thin max-w-full">
+                                      {editingSpotImages.map((img, idx) => (
+                                        <div key={idx} className="relative h-10 w-14 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                                          <img src={img} alt="Editing spot" className="h-full w-full object-cover" />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeEditingSpotImage(idx)}
+                                            className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4 w-4 rounded-full flex items-center justify-center text-[8px] text-white"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
                                 <div className="flex justify-end gap-1">
                                   <button
                                     onClick={() => setEditingSpotId(null)}
@@ -1695,29 +1859,37 @@ export default function App() {
           </div>
 
           {/* New collaborative sections: Itinerary Timeline & Memos & Shopping Wishlists */}
-          <ItineraryBuilder
-            spotsSaseho={spotsSaseho}
-            spotsBusan={spotsBusan}
-            updateSpot={updateSpot}
-          />
+          <div id="itinerary-plan" className="scroll-mt-20">
+            <ItineraryBuilder
+              spotsSaseho={spotsSaseho}
+              spotsBusan={spotsBusan}
+              updateSpot={updateSpot}
+            />
+          </div>
 
-          <ShoppingSection
-            wishlist={wishlist}
-            meName={me.name}
-            addWishlistItem={addWishlistItem}
-            toggleWishlistItem={toggleWishlistItem}
-            deleteWishlistItem={deleteWishlistItem}
-          />
+          <div id="shopping-list" className="scroll-mt-20">
+            <ShoppingSection
+              wishlist={wishlist}
+              meName={me.name}
+              addWishlistItem={addWishlistItem}
+              toggleWishlistItem={toggleWishlistItem}
+              deleteWishlistItem={deleteWishlistItem}
+            />
+          </div>
 
-          <LocalTipsSection />
+          <div id="local-tips" className="scroll-mt-20">
+            <LocalTipsSection />
+          </div>
 
-          <MemoSection
-            memos={memos}
-            meName={me.name}
-            addMemo={addMemo}
-            deleteMemo={deleteMemo}
-            updateMemo={updateMemo}
-          />
+          <div id="memo-board" className="scroll-mt-20">
+            <MemoSection
+              memos={memos}
+              meName={me.name}
+              addMemo={addMemo}
+              deleteMemo={deleteMemo}
+              updateMemo={updateMemo}
+            />
+          </div>
 
           {/* cloud connection state status */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3 text-slate-300 text-xs">

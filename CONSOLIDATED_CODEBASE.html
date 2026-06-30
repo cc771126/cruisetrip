@@ -3322,31 +3322,6 @@ export default function App() {
             &lt;/span&gt;
           &lt;/div&gt;
 
-          &lt;div className=&quot;hidden md:flex items-center gap-1 overflow-x-auto py-1&quot;&gt;
-            {[
-              { id: &#039;overview&#039;, label: &#039;行程總覽&#039; },
-              { id: &#039;daily&#039;, label: &#039;每日行程&#039; },
-              { id: &#039;ship&#039;, label: &#039;郵輪亮點&#039; },
-              { id: &#039;dining&#039;, label: &#039;船上餐食&#039; },
-              { id: &#039;cost&#039;, label: &#039;費用估算&#039; },
-              { id: &#039;notes&#039;, label: &#039;注意事項&#039; },
-              { id: &#039;confirm&#039;, label: &#039;旅行社Q&amp;A&#039; },
-              { id: &#039;discuss&#039;, label: &#039;自由行討論區&#039; }
-            ].map((section) =&gt; (
-              &lt;button
-                key={section.id}
-                onClick={() =&gt; scrollToSection(section.id)}
-                className={`text-xs font-extrabold px-3 py-2 rounded-full transition-all ${
-                  activeSection === section.id
-                    ? &#039;bg-indigo-600 text-white shadow-sm&#039;
-                    : &#039;text-slate-600 hover:bg-slate-200/50 hover:text-indigo-600&#039;
-                }`}
-              &gt;
-                {section.label}
-              &lt;/button&gt;
-            ))}
-          &lt;/div&gt;
-
           &lt;button
             onClick={() =&gt; scrollToSection(&#039;discuss&#039;)}
             className=&quot;bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-full shadow-md shadow-rose-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1&quot;
@@ -3355,30 +3330,36 @@ export default function App() {
           &lt;/button&gt;
         &lt;/div&gt;
 
-        {/* Mobile Swipeable Anchor Bar */}
-        &lt;div className=&quot;flex md:hidden items-center gap-2 overflow-x-auto px-4 pb-3 pt-0.5 border-t border-sky-100/40 scrollbar-none snap-x snap-mandatory&quot;&gt;
-          {[
-            { id: &#039;overview&#039;, label: &#039;行程總覽&#039; },
-            { id: &#039;daily&#039;, label: &#039;每日行程&#039; },
-            { id: &#039;ship&#039;, label: &#039;郵輪亮點&#039; },
-            { id: &#039;dining&#039;, label: &#039;船上餐食&#039; },
-            { id: &#039;cost&#039;, label: &#039;費用估算&#039; },
-            { id: &#039;notes&#039;, label: &#039;注意事項&#039; },
-            { id: &#039;confirm&#039;, label: &#039;旅行社Q&amp;A&#039; },
-            { id: &#039;discuss&#039;, label: &#039;自由行討論區&#039; }
-          ].map((section) =&gt; (
-            &lt;button
-              key={section.id}
-              onClick={() =&gt; scrollToSection(section.id)}
-              className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
-                activeSection === section.id
-                  ? &#039;bg-indigo-600 text-white shadow-sm&#039;
-                  : &#039;bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-indigo-600&#039;
-              }`}
-            &gt;
-              {section.label}
-            &lt;/button&gt;
-          ))}
+        {/* Unified Scrollable Anchor Bar (Visible on both desktop &amp; mobile with sleek custom scrollbar!) */}
+        &lt;div className=&quot;border-t border-sky-100/40 bg-white/95 backdrop-blur-sm py-2 px-4 overflow-x-auto flex items-center [&amp;::-webkit-scrollbar]:h-1.5 [&amp;::-webkit-scrollbar-track]:bg-transparent [&amp;::-webkit-scrollbar-thumb]:bg-sky-200/60 [&amp;::-webkit-scrollbar-thumb]:rounded-full hover:[&amp;::-webkit-scrollbar-thumb]:bg-sky-300 scrollbar-thin scroll-smooth snap-x snap-mandatory&quot;&gt;
+          &lt;div className=&quot;max-w-6xl mx-auto w-full flex items-center gap-2 overflow-x-auto [&amp;::-webkit-scrollbar]:none&quot;&gt;
+            {[
+              { id: &#039;overview&#039;, label: &#039;行程總覽&#039; },
+              { id: &#039;daily&#039;, label: &#039;每日行程&#039; },
+              { id: &#039;ship&#039;, label: &#039;郵輪亮點&#039; },
+              { id: &#039;dining&#039;, label: &#039;船上餐食&#039; },
+              { id: &#039;cost&#039;, label: &#039;費用估算&#039; },
+              { id: &#039;notes&#039;, label: &#039;注意事項&#039; },
+              { id: &#039;confirm&#039;, label: &#039;旅行社Q&amp;A&#039; },
+              { id: &#039;discuss&#039;, label: &#039;討論區&#039; },
+              { id: &#039;itinerary-plan&#039;, label: &#039;終極排程&#039; },
+              { id: &#039;shopping-list&#039;, label: &#039;代購待買&#039; },
+              { id: &#039;local-tips&#039;, label: &#039;避坑叮嚀&#039; },
+              { id: &#039;memo-board&#039;, label: &#039;協同筆記&#039; }
+            ].map((section) =&gt; (
+              &lt;button
+                key={section.id}
+                onClick={() =&gt; scrollToSection(section.id)}
+                className={`text-[11px] sm:text-xs font-extrabold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
+                  activeSection === section.id
+                    ? &#039;bg-indigo-600 text-white shadow-sm&#039;
+                    : &#039;bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600&#039;
+                }`}
+              &gt;
+                {section.label}
+              &lt;/button&gt;
+            ))}
+          &lt;/div&gt;
         &lt;/div&gt;
       &lt;/nav&gt;
 
@@ -4689,29 +4670,37 @@ export default function App() {
           &lt;/div&gt;
 
           {/* New collaborative sections: Itinerary Timeline &amp; Memos &amp; Shopping Wishlists */}
-          &lt;ItineraryBuilder
-            spotsSaseho={spotsSaseho}
-            spotsBusan={spotsBusan}
-            updateSpot={updateSpot}
-          /&gt;
+          &lt;div id=&quot;itinerary-plan&quot; className=&quot;scroll-mt-20&quot;&gt;
+            &lt;ItineraryBuilder
+              spotsSaseho={spotsSaseho}
+              spotsBusan={spotsBusan}
+              updateSpot={updateSpot}
+            /&gt;
+          &lt;/div&gt;
 
-          &lt;ShoppingSection
-            wishlist={wishlist}
-            meName={me.name}
-            addWishlistItem={addWishlistItem}
-            toggleWishlistItem={toggleWishlistItem}
-            deleteWishlistItem={deleteWishlistItem}
-          /&gt;
+          &lt;div id=&quot;shopping-list&quot; className=&quot;scroll-mt-20&quot;&gt;
+            &lt;ShoppingSection
+              wishlist={wishlist}
+              meName={me.name}
+              addWishlistItem={addWishlistItem}
+              toggleWishlistItem={toggleWishlistItem}
+              deleteWishlistItem={deleteWishlistItem}
+            /&gt;
+          &lt;/div&gt;
 
-          &lt;LocalTipsSection /&gt;
+          &lt;div id=&quot;local-tips&quot; className=&quot;scroll-mt-20&quot;&gt;
+            &lt;LocalTipsSection /&gt;
+          &lt;/div&gt;
 
-          &lt;MemoSection
-            memos={memos}
-            meName={me.name}
-            addMemo={addMemo}
-            deleteMemo={deleteMemo}
-            updateMemo={updateMemo}
-          /&gt;
+          &lt;div id=&quot;memo-board&quot; className=&quot;scroll-mt-20&quot;&gt;
+            &lt;MemoSection
+              memos={memos}
+              meName={me.name}
+              addMemo={addMemo}
+              deleteMemo={deleteMemo}
+              updateMemo={updateMemo}
+            /&gt;
+          &lt;/div&gt;
 
           {/* cloud connection state status */}
           &lt;div className=&quot;bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3 text-slate-300 text-xs&quot;&gt;

@@ -47,8 +47,48 @@ export default function ShoppingSection({
   };
 
   // Group wishlist items
-  const customItems = wishlist.filter(i => i.category === 'custom');
-  const groupedWishlist = wishlist; // We can show all together
+  const erinItems = wishlist.filter(i => i.addedBy === 'Erin');
+  const rebeccaItems = wishlist.filter(i => i.addedBy === 'Rebecca');
+  const otherItems = wishlist.filter(i => i.addedBy !== 'Erin' && i.addedBy !== 'Rebecca');
+
+  const renderWishlistItem = (item: WishlistItem) => (
+    <div
+      key={item.id}
+      className={`flex items-center justify-between p-2 rounded-xl border transition-all text-xs ${
+        item.completed
+          ? 'bg-slate-100/60 border-slate-200 text-slate-400 line-through'
+          : 'bg-white border-slate-200/80 text-slate-800 shadow-sm hover:border-slate-300'
+      }`}
+    >
+      <div
+        onClick={() => toggleWishlistItem(item.id)}
+        className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
+      >
+        <div
+          className={`h-4 w-4 rounded-md border flex items-center justify-center text-white text-[9px] flex-shrink-0 transition-all ${
+            item.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'
+          }`}
+        >
+          {item.completed && '✓'}
+        </div>
+        <span className="font-extrabold truncate text-slate-800">{item.name}</span>
+      </div>
+      <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+        {item.addedBy !== 'Erin' && item.addedBy !== 'Rebecca' && (
+          <span className="text-[9px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded">
+            {item.addedBy}
+          </span>
+        )}
+        <button
+          onClick={() => deleteWishlistItem(item.id)}
+          className="text-slate-400 hover:text-rose-500 p-1 rounded hover:bg-slate-100 transition-colors"
+          title="刪除"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
@@ -64,22 +104,22 @@ export default function ShoppingSection({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left column: recommendations (Japan/Korea tabs) */}
-        <div className="lg:col-span-7 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col">
+        <div className="lg:col-span-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[400px]">
           <span className="text-xs font-extrabold text-slate-500 mb-3 block">🇯🇵 🇰🇷 日韓熱門推薦（點擊 ＋ 號直接加入清單）</span>
           
           {/* Recommendation tabs */}
           <div className="flex bg-slate-200/60 p-1 rounded-xl mb-3 gap-1">
             <button
               onClick={() => setActiveTab('japan')}
-              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+              className={`flex-1 text-[11px] py-1.5 rounded-lg font-extrabold transition-all ${
                 activeTab === 'japan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              🇯🇵 日本熱門 Top 10
+              🇯🇵 日本 Top 10
             </button>
             <button
               onClick={() => setActiveTab('korea_oy')}
-              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+              className={`flex-1 text-[11px] py-1.5 rounded-lg font-extrabold transition-all ${
                 activeTab === 'korea_oy' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -87,16 +127,16 @@ export default function ShoppingSection({
             </button>
             <button
               onClick={() => setActiveTab('korea_rx')}
-              className={`flex-1 text-xs py-2 rounded-lg font-extrabold transition-all ${
+              className={`flex-1 text-[11px] py-1.5 rounded-lg font-extrabold transition-all ${
                 activeTab === 'korea_rx' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              🇰🇷 韓國藥局必買
+              🇰🇷 韓國藥局
             </button>
           </div>
 
           {/* Recommended Items Grid */}
-          <div className="space-y-1.5 overflow-y-auto max-h-[220px] pr-1 scrollbar-thin">
+          <div className="space-y-1.5 overflow-y-auto flex-1 pr-1 scrollbar-thin">
             {RECOMMENDATIONS[activeTab].map((item) => {
               const inWishlist = wishlist.some(w => w.name === item && !w.completed);
               return (
@@ -130,71 +170,82 @@ export default function ShoppingSection({
           </div>
         </div>
 
-        {/* Right column: our shared wishlist */}
-        <div className="lg:col-span-5 flex flex-col bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-[350px]">
-          <span className="text-xs font-extrabold text-slate-500 mb-3 block">🛒 我們的採購清單</span>
-
-          <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin mb-3">
-            {groupedWishlist.length === 0 ? (
-              <div className="text-center py-16 text-slate-400 text-xs flex flex-col items-center justify-center">
-                <span>目前清單空空的。</span>
-                <span className="mt-1">點左側＋號或在下方輸入，</span>
-                <span>即可新增採購內容！</span>
+        {/* Right column: our separated wishlist */}
+        <div className="lg:col-span-7 flex flex-col justify-between h-[400px] gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+            {/* Column 1: Erin's List */}
+            <div className="flex flex-col bg-[#fef8fa]/80 border border-rose-100 rounded-2xl p-3.5 h-full">
+              <div className="flex items-center justify-between border-b border-rose-100/50 pb-2 mb-2">
+                <span className="text-xs font-black text-rose-700 flex items-center gap-1">
+                  🌸 Erin 的採購清單
+                </span>
+                <span className="text-[10px] bg-rose-100 text-rose-800 font-extrabold px-1.5 py-0.5 rounded-full">
+                  {erinItems.length} 筆
+                </span>
               </div>
-            ) : (
-              groupedWishlist.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-xs ${
-                    item.completed
-                      ? 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'
-                      : 'bg-white border-slate-200 text-slate-700 shadow-sm'
-                  }`}
-                >
-                  <div
-                    onClick={() => toggleWishlistItem(item.id)}
-                    className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
-                  >
-                    <div
-                      className={`h-4.5 w-4.5 rounded-md border flex items-center justify-center text-white text-[10px] ${
-                        item.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'
-                      }`}
-                    >
-                      ✓
-                    </div>
-                    <span className="font-bold truncate">{item.name}</span>
+
+              <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
+                {erinItems.length === 0 ? (
+                  <div className="text-center py-12 text-rose-300 text-xs flex flex-col items-center justify-center h-full">
+                    <span>目前清單空空的。</span>
+                    <span className="text-[10px] opacity-75 mt-0.5">登入 Erin 後新增即可！</span>
                   </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    <span className="text-[9px] bg-slate-200 text-slate-500 font-extrabold px-1 py-0.5 rounded">
-                      {item.addedBy}
-                    </span>
-                    <button
-                      onClick={() => deleteWishlistItem(item.id)}
-                      className="text-slate-400 hover:text-rose-500 transition-colors"
-                      title="刪除"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                ) : (
+                  erinItems.map(renderWishlistItem)
+                )}
+              </div>
+            </div>
+
+            {/* Column 2: Rebecca's List */}
+            <div className="flex flex-col bg-[#f0f9ff]/80 border border-sky-100 rounded-2xl p-3.5 h-full">
+              <div className="flex items-center justify-between border-b border-sky-100/50 pb-2 mb-2">
+                <span className="text-xs font-black text-sky-700 flex items-center gap-1">
+                  🎀 Rebecca 的採購清單
+                </span>
+                <span className="text-[10px] bg-sky-100 text-sky-800 font-extrabold px-1.5 py-0.5 rounded-full">
+                  {rebeccaItems.length} 筆
+                </span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
+                {rebeccaItems.length === 0 ? (
+                  <div className="text-center py-12 text-sky-300 text-xs flex flex-col items-center justify-center h-full">
+                    <span>目前清單空空的。</span>
+                    <span className="text-[10px] opacity-75 mt-0.5">登入 Rebecca 後新增即可！</span>
                   </div>
-                </div>
-              ))
-            )}
+                ) : (
+                  rebeccaItems.map(renderWishlistItem)
+                )}
+              </div>
+            </div>
           </div>
 
+          {/* Other list if any items are not by Erin/Rebecca */}
+          {otherItems.length > 0 && (
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 max-h-[100px] overflow-y-auto scrollbar-thin">
+              <span className="text-[10px] font-extrabold text-slate-500 mb-1.5 block">👥 其他人的採購清單：</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                {otherItems.map(renderWishlistItem)}
+              </div>
+            </div>
+          )}
+
           {/* Add custom custom item form */}
-          <form onSubmit={handleAddCustom} className="flex gap-1">
+          <form onSubmit={handleAddCustom} className="flex gap-1.5">
             <input
               type="text"
-              placeholder="自行輸入想買的商品..."
+              placeholder={meName ? `新增代購商品至 ${meName} 的清單...` : "請先在下方「討論區」填寫您的暱稱..."}
               value={customItem}
               onChange={e => setCustomItem(e.target.value)}
-              className="flex-1 h-9 border border-slate-200 rounded-lg px-2 bg-white text-xs focus:outline-none focus:border-indigo-500"
+              disabled={!meName}
+              className="flex-1 h-10 border border-slate-200 rounded-xl px-3 bg-white text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3 rounded-lg transition-all"
+              disabled={!meName}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 rounded-xl transition-all shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-1"
             >
-              新增
+              <Plus className="h-4 w-4" /> 新增商品
             </button>
           </form>
         </div>

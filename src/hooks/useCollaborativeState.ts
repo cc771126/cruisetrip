@@ -8,7 +8,7 @@ import { database, dbMode, checkLocalStorageUsable } from '../firebase';
 import { ref, onValue, set } from 'firebase/database';
 import { Spot, Expense, Memo, WishlistItem } from '../types';
 
-function colorFor(name: string): string {
+export function colorFor(name: string): string {
   const colors = [
     "#ef6b3f", "#1597a5", "#c0567f", "#7c63d8", "#2bb673",
     "#e0a72e", "#5a7385", "#d8556e", "#3a86c8", "#e2622f"
