@@ -3354,6 +3354,32 @@ export default function App() {
             🗺️ 一起選景點
           &lt;/button&gt;
         &lt;/div&gt;
+
+        {/* Mobile Swipeable Anchor Bar */}
+        &lt;div className=&quot;flex md:hidden items-center gap-2 overflow-x-auto px-4 pb-3 pt-0.5 border-t border-sky-100/40 scrollbar-none snap-x snap-mandatory&quot;&gt;
+          {[
+            { id: &#039;overview&#039;, label: &#039;行程總覽&#039; },
+            { id: &#039;daily&#039;, label: &#039;每日行程&#039; },
+            { id: &#039;ship&#039;, label: &#039;郵輪亮點&#039; },
+            { id: &#039;dining&#039;, label: &#039;船上餐食&#039; },
+            { id: &#039;cost&#039;, label: &#039;費用估算&#039; },
+            { id: &#039;notes&#039;, label: &#039;注意事項&#039; },
+            { id: &#039;confirm&#039;, label: &#039;旅行社Q&amp;A&#039; },
+            { id: &#039;discuss&#039;, label: &#039;自由行討論區&#039; }
+          ].map((section) =&gt; (
+            &lt;button
+              key={section.id}
+              onClick={() =&gt; scrollToSection(section.id)}
+              className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
+                activeSection === section.id
+                  ? &#039;bg-indigo-600 text-white shadow-sm&#039;
+                  : &#039;bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-indigo-600&#039;
+              }`}
+            &gt;
+              {section.label}
+            &lt;/button&gt;
+          ))}
+        &lt;/div&gt;
       &lt;/nav&gt;
 
       {/* ===== HERO HEADER ===== */}

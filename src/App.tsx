@@ -360,6 +360,32 @@ export default function App() {
             🗺️ 一起選景點
           </button>
         </div>
+
+        {/* Mobile Swipeable Anchor Bar */}
+        <div className="flex md:hidden items-center gap-2 overflow-x-auto px-4 pb-3 pt-0.5 border-t border-sky-100/40 scrollbar-none snap-x snap-mandatory">
+          {[
+            { id: 'overview', label: '行程總覽' },
+            { id: 'daily', label: '每日行程' },
+            { id: 'ship', label: '郵輪亮點' },
+            { id: 'dining', label: '船上餐食' },
+            { id: 'cost', label: '費用估算' },
+            { id: 'notes', label: '注意事項' },
+            { id: 'confirm', label: '旅行社Q&A' },
+            { id: 'discuss', label: '自由行討論區' }
+          ].map((section) => (
+            <button
+              key={section.id}
+              onClick={() => scrollToSection(section.id)}
+              className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all whitespace-nowrap snap-center flex-shrink-0 ${
+                activeSection === section.id
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-indigo-600'
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* ===== HERO HEADER ===== */}
