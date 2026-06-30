@@ -23,6 +23,136 @@ import MemoSection from './components/MemoSection';
 import ShoppingSection from './components/ShoppingSection';
 import LocalTipsSection from './components/LocalTipsSection';
 
+const MiniShip = ({ className = "h-6 w-6" }: { className?: string }) => (
+  <svg viewBox="0 0 460 300" className={className}>
+    <path d="M70 142 H360 L335 196 Q330 206 318 206 H112 Q100 206 95 196 Z" fill="currentColor" />
+    <path d="M82 168 H348 L341 182 H88 Z" fill="#4f46e5" opacity="0.85" />
+    <rect x="120" y="120" width="190" height="22" rx="6" fill="#ffffff" />
+    <rect x="140" y="98" width="150" height="24" rx="6" fill="#f8fafc" />
+    <rect x="160" y="78" width="110" height="22" rx="6" fill="#ffffff" />
+    <rect x="180" y="56" width="20" height="26" rx="5" fill="#1e1b4b" />
+    <rect x="210" y="56" width="20" height="26" rx="5" fill="#3b82f6" />
+    <g fill="#cbd5e1">
+      <circle cx="120" cy="155" r="5" /><circle cx="145" cy="155" r="5" />
+      <circle cx="170" cy="155" r="5" /><circle cx="195" cy="155" r="5" />
+    </g>
+  </svg>
+);
+
+const MSC_CruiseShip_With_Sunset = ({ className = "w-full h-auto" }: { className?: string }) => (
+  <svg viewBox="0 0 500 320" className={className}>
+    {/* Golden/Orange Sunset Sun */}
+    <circle cx="360" cy="130" r="110" fill="url(#sunset-grad)" />
+    
+    {/* Sun glow & reflection gradients */}
+    <defs>
+      <linearGradient id="sunset-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#fef08a" stopOpacity="1" />      {/* Yellow-200 */}
+        <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.95" />    {/* Amber-500 */}
+        <stop offset="100%" stopColor="#ea580c" stopOpacity="0.8" />    {/* Orange-600 */}
+      </linearGradient>
+      <linearGradient id="hull-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="85%" stopColor="#f1f5f9" />
+        <stop offset="100%" stopColor="#cbd5e1" />
+      </linearGradient>
+    </defs>
+    
+    {/* Ship body / hull */}
+    {/* Lower hull (Navy blue base) */}
+    <path d="M 60,210 L 410,210 L 390,255 Q 380,265 365,265 L 105,265 Q 90,265 82,255 Z" fill="#0f172a" />
+    
+    {/* Waterline stripe (MSC signature style light blue / turquoise stripe) */}
+    <path d="M 72,195 H 418 L 412,210 H 77 Z" fill="#38bdf8" />
+    
+    {/* Upper hull (White main body) */}
+    <path d="M 80,140 H 390 L 424,195 H 68 Z" fill="url(#hull-grad)" />
+    
+    {/* Portholes (Little round window dots on the white hull) */}
+    <g fill="#475569" opacity="0.65">
+      <circle cx="100" cy="170" r="4.5" />
+      <circle cx="130" cy="170" r="4.5" />
+      <circle cx="160" cy="170" r="4.5" />
+      <circle cx="190" cy="170" r="4.5" />
+      <circle cx="220" cy="170" r="4.5" />
+      <circle cx="250" cy="170" r="4.5" />
+      <circle cx="280" cy="170" r="4.5" />
+      <circle cx="310" cy="170" r="4.5" />
+      <circle cx="340" cy="170" r="4.5" />
+      <circle cx="370" cy="170" r="4.5" />
+    </g>
+    
+    {/* Main decks (Multi-tier white cabins) */}
+    {/* Deck 1 */}
+    <rect x="110" y="112" width="265" height="28" rx="5" fill="#ffffff" />
+    {/* Deck 2 */}
+    <rect x="135" y="84" width="220" height="28" rx="5" fill="#f8fafc" />
+    {/* Deck 3 */}
+    <rect x="165" y="58" width="165" height="26" rx="5" fill="#ffffff" />
+    
+    {/* Deck Cabin Windows (Indigo/blue glass look) */}
+    <g fill="#1e3a8a" opacity="0.8">
+      {/* Deck 1 windows */}
+      <rect x="130" y="120" width="12" height="12" rx="2" />
+      <rect x="150" y="120" width="12" height="12" rx="2" />
+      <rect x="170" y="120" width="12" height="12" rx="2" />
+      <rect x="190" y="120" width="12" height="12" rx="2" />
+      <rect x="210" y="120" width="12" height="12" rx="2" />
+      <rect x="230" y="120" width="12" height="12" rx="2" />
+      <rect x="250" y="120" width="12" height="12" rx="2" />
+      <rect x="270" y="120" width="12" height="12" rx="2" />
+      <rect x="290" y="120" width="12" height="12" rx="2" />
+      <rect x="310" y="120" width="12" height="12" rx="2" />
+      <rect x="330" y="120" width="12" height="12" rx="2" />
+      
+      {/* Deck 2 windows */}
+      <rect x="155" y="92" width="10" height="12" rx="1.5" />
+      <rect x="175" y="92" width="10" height="12" rx="1.5" />
+      <rect x="195" y="92" width="10" height="12" rx="1.5" />
+      <rect x="215" y="92" width="10" height="12" rx="1.5" />
+      <rect x="235" y="92" width="10" height="12" rx="1.5" />
+      <rect x="255" y="92" width="10" height="12" rx="1.5" />
+      <rect x="275" y="92" width="10" height="12" rx="1.5" />
+      <rect x="295" y="92" width="10" height="12" rx="1.5" />
+      <rect x="315" y="92" width="10" height="12" rx="1.5" />
+      
+      {/* Deck 3 windows */}
+      <rect x="180" y="65" width="10" height="10" rx="1.5" />
+      <rect x="200" y="65" width="10" height="10" rx="1.5" />
+      <rect x="220" y="65" width="10" height="10" rx="1.5" />
+      <rect x="240" y="65" width="10" height="10" rx="1.5" />
+      <rect x="260" y="65" width="10" height="10" rx="1.5" />
+      <rect x="280" y="65" width="10" height="10" rx="1.5" />
+      <rect x="300" y="65" width="10" height="10" rx="1.5" />
+    </g>
+    
+    {/* Funnels (MSC signature style colors) */}
+    {/* Funnel 1 */}
+    <rect x="190" y="28" width="18" height="30" rx="3" fill="#1e293b" />
+    <path d="M 190,28 H 208 L 206,22 H 192 Z" fill="#38bdf8" />
+    
+    {/* Funnel 2 */}
+    <rect x="225" y="24" width="22" height="34" rx="4" fill="#0f172a" />
+    <path d="M 225,24 H 247 L 245,18 H 227 Z" fill="#f97316" />
+    
+    {/* Funnel 3 */}
+    <rect x="260" y="28" width="18" height="30" rx="3" fill="#1e293b" />
+    <path d="M 260,28 H 278 L 276,22 H 262 Z" fill="#38bdf8" />
+    
+    {/* Navigation Radar / Antenna */}
+    <line x1="310" y1="58" x2="310" y2="38" stroke="#475569" strokeWidth="2.5" />
+    <ellipse cx="310" cy="38" rx="8" ry="3" fill="#94a3b8" />
+    
+    {/* MSC Text Logo printed boldly on the side hull */}
+    <rect x="210" y="222" width="80" height="24" rx="6" fill="#ffffff" opacity="0.2" />
+    <text x="250" y="240" textAnchor="middle" fontFamily="'Space Grotesk', 'Inter', sans-serif" fontWeight="900" fontSize="18" letterSpacing="1" fill="#ffffff">MSC</text>
+    
+    {/* Beautiful gentle sea waves */}
+    <path d="M 30,260 Q 70,255 110,260 T 190,260 T 270,260 T 350,260 T 430,260 T 490,260" fill="none" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" opacity="0.5" />
+    <path d="M 50,266 Q 95,262 140,266 T 230,266 T 320,266 T 410,266 T 480,266" fill="none" stroke="#0284c7" strokeWidth="3" strokeLinecap="round" opacity="0.3" />
+  </svg>
+);
+
 const RATE = 31.5; // JPY/KRW estimates
 
 export default function App() {
@@ -98,6 +228,11 @@ export default function App() {
   const [spotCategory, setSpotCategory] = useState('sight');
   const [uploadedBase64s, setUploadedBase64s] = useState<string[]>([]);
   const [spotSort, setSpotSort] = useState<'votes' | 'new'>('votes');
+  const [diningTab, setDiningTab] = useState<'free' | 'paid'>('free');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [showFloat, setShowFloat] = useState(false);
+  const [isFloatMenuOpen, setIsFloatMenuOpen] = useState(false);
+  const [spotToDelete, setSpotToDelete] = useState<{ port: 'saseho' | 'busan'; id: string; name: string } | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [checklistNameInput, setChecklistNameInput] = useState('');
 
@@ -107,6 +242,7 @@ export default function App() {
   const [editingSpotMap, setEditingSpotMap] = useState<string>('');
   const [editingSpotCost, setEditingSpotCost] = useState<string>('');
   const [editingSpotImages, setEditingSpotImages] = useState<string[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -137,14 +273,15 @@ export default function App() {
   // Dynamic active section scrolling tracking
   useEffect(() => {
     const handleScroll = () => {
-      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+      // If we are at the very bottom of the page, force 'shopping-list'
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
       if (isAtBottom) {
         setActiveSection('shopping-list');
         return;
       }
 
-      let currentCategory = 'overview';
-      const allTargets = [
+      const threshold = 160; // Offset that accounts for fixed header height
+      const sections = [
         { id: 'overview', cat: 'overview' },
         { id: 'daily', cat: 'overview' },
         { id: 'ship', cat: 'overview' },
@@ -159,23 +296,57 @@ export default function App() {
         { id: 'memo-board', cat: 'shopping-list' }
       ];
 
-      for (const target of allTargets) {
-        const el = document.getElementById(target.id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          // Offset of 180px gives a very smooth transition when a heading reaches near the top of the viewport
-          if (rect.top <= 180 && rect.bottom >= 120) {
-            currentCategory = target.cat;
+      let currentCategory = 'overview';
+
+      // 1. If we are above the first section, it's overview (Hero area)
+      const firstSectionEl = document.getElementById('overview');
+      if (firstSectionEl && firstSectionEl.getBoundingClientRect().top > threshold) {
+        currentCategory = 'overview';
+      } else {
+        // 2. Find which section currently intersects the top line of the viewport (at our threshold)
+        const intersectingSec = sections.find((sec) => {
+          const el = document.getElementById(sec.id);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            return rect.top <= threshold && rect.bottom > threshold;
           }
+          return false;
+        });
+
+        if (intersectingSec) {
+          currentCategory = intersectingSec.cat;
+        } else {
+          // 3. Fallback: Find the closest section using absolute distance to the threshold line
+          let minDistance = Infinity;
+          let closestCat = 'overview';
+          sections.forEach((sec) => {
+            const el = document.getElementById(sec.id);
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              const dist = Math.abs(rect.top - threshold);
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestCat = sec.cat;
+              }
+            }
+          });
+          currentCategory = closestCat;
         }
       }
-      
+
       setActiveSection((prev) => {
         if (prev !== currentCategory) {
           return currentCategory;
         }
         return prev;
       });
+
+      // Show/hide floating button based on scroll offset
+      if (window.scrollY > 300) {
+        setShowFloat(true);
+      } else {
+        setShowFloat(false);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -241,8 +412,8 @@ export default function App() {
           img.src = event.target?.result as string;
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 400;
-            const MAX_HEIGHT = 300;
+            const MAX_WIDTH = 1800;
+            const MAX_HEIGHT = 1800;
             let width = img.width;
             let height = img.height;
 
@@ -262,7 +433,7 @@ export default function App() {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
             resolve(dataUrl);
           };
           img.onerror = (e) => reject(e);
@@ -296,8 +467,8 @@ export default function App() {
           img.src = event.target?.result as string;
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 400;
-            const MAX_HEIGHT = 300;
+            const MAX_WIDTH = 1800;
+            const MAX_HEIGHT = 1800;
             let width = img.width;
             let height = img.height;
 
@@ -317,7 +488,7 @@ export default function App() {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
             resolve(dataUrl);
           };
           img.onerror = (e) => reject(e);
@@ -473,13 +644,15 @@ export default function App() {
   const checklistPercent = checklistTotal > 0 ? (myDoneChecklistCount / checklistTotal) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-[#f3fafc] text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white">
       
       {/* ===== NAVIGATION BAR ===== */}
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-50/80 border-b border-sky-100 shadow-sm transition-all">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl animate-bounce">🚢</span>
+          <div className="flex items-center gap-2.5">
+            <div className="bg-sky-50 p-1.5 rounded-xl border border-sky-100/60 animate-float-ship">
+              <MiniShip className="h-7 w-10 text-slate-700" />
+            </div>
             <span className="font-black text-slate-800 tracking-tight text-base sm:text-lg">
               康匠郵輪之旅 <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">115員工旅遊</span>
             </span>
@@ -521,34 +694,34 @@ export default function App() {
       </nav>
 
       {/* ===== HERO HEADER ===== */}
-      <header className="relative bg-gradient-to-br from-indigo-950 via-slate-900 to-sky-900 text-white overflow-hidden py-16 px-4 md:py-24">
+      <header className="relative bg-gradient-to-br from-[#061f2d] via-[#0d3144] to-[#164a66] text-white overflow-hidden py-16 px-4 md:py-24">
         {/* Decorative elements */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_800px_400px_at_80%_-10%,rgba(99,102,241,0.25),transparent_60%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_600px_400px_at_10%_110%,rgba(245,158,11,0.1),transparent_50%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_800px_400px_at_80%_-10%,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_600px_400px_at_10%_110%,rgba(255,255,255,0.1),transparent_50%)] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full text-xs font-bold text-amber-300">
               🌊 台灣康匠 · 超豪華員工福利郵輪大航海
             </span>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-none text-white">
               佐世保 × 釜山 <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-100 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-amber-200 via-yellow-100 to-white bg-clip-text text-transparent">
                 六天五夜郵輪之旅
               </span>
             </h1>
-            <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl font-medium leading-relaxed">
+            <p className="text-white/95 text-sm sm:text-base md:text-lg max-w-2xl font-medium leading-relaxed">
               搭乘亞洲最大頂級豪華旗艦郵輪 <b>MSC 榮耀號 Bellissima</b>，免除行李轉乘奔波之苦。一覺醒來已靠岸日本佐世保與韓國釜山！極致享受豐富船上設施，岸上安排各自自主，自由自在！
             </p>
 
             <div className="flex flex-wrap gap-2.5 pt-2">
-              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+              <span className="bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
                 📅 2026.07.25 – 07.30
               </span>
-              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+              <span className="bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
                 ⚓ 基隆西岸旅客碼頭
               </span>
-              <span className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
+              <span className="bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1">
                 🛳️ 17.2萬噸 傳奇旗艦
               </span>
             </div>
@@ -556,60 +729,47 @@ export default function App() {
             <div className="flex flex-wrap gap-3 pt-4">
               <button
                 onClick={() => scrollToSection('overview')}
-                className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl shadow-lg shadow-rose-500/30 transition-all hover:-translate-y-0.5"
+                className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl shadow-lg shadow-rose-500/30 transition-all hover:-translate-y-0.5 cursor-pointer"
               >
-                看行程總覽
+                看完整行程 ➔
               </button>
               <button
                 onClick={() => scrollToSection('discuss')}
-                className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all"
+                className="bg-white/10 hover:bg-white/20 border border-white/15 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all cursor-pointer"
               >
-                🗺️ 直達討論區規劃
+                🗺️ 直接去討論區選景點
               </button>
             </div>
           </div>
 
           {/* Countdown & visual ship column */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center space-y-6">
-            {/* Countdown card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/15 p-5 rounded-3xl w-full max-w-xs shadow-xl flex flex-col items-center">
-              <span className="text-xs font-bold text-slate-300 tracking-wider mb-3">距離啟航出發倒數 ⏰</span>
-              <div className="flex gap-2">
-                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
-                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.d}</span>
-                  <span className="block text-[10px] font-bold text-sky-200 mt-1">天</span>
-                </div>
-                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
-                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.h}</span>
-                  <span className="block text-[10px] font-bold text-sky-200 mt-1">時</span>
-                </div>
-                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
-                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.m}</span>
-                  <span className="block text-[10px] font-bold text-sky-200 mt-1">分</span>
-                </div>
-                <div className="bg-white/10 border border-white/10 p-2.5 rounded-2xl min-w-[62px] text-center">
-                  <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{countdown.s}</span>
-                  <span className="block text-[10px] font-bold text-sky-200 mt-1">秒</span>
-                </div>
-              </div>
+          <div className="lg:col-span-5 flex flex-col items-center justify-center space-y-6 relative">
+            {/* Cruise ship with sunset peeking behind it */}
+            <div className="w-full max-w-[340px] opacity-100 transition-all duration-300 animate-float-ship relative z-10 -mb-4">
+              <MSC_CruiseShip_With_Sunset className="w-full h-auto" />
             </div>
 
-            {/* Ship illustration */}
-            <div className="w-full max-w-[260px] opacity-90 hover:opacity-100 transition-all duration-300 hidden sm:block">
-              <svg viewBox="0 0 460 300" className="w-full h-auto animate-pulse">
-                <path d="M70 142 H360 L335 196 Q330 206 318 206 H112 Q100 206 95 196 Z" fill="#ffffff" stroke="#dfeaf0" />
-                <path d="M82 168 H348 L341 182 H88 Z" fill="#28c2d2" opacity="0.85" />
-                <rect x="120" y="120" width="190" height="22" rx="6" fill="#fff" />
-                <rect x="140" y="98" width="150" height="24" rx="6" fill="#f3f8fb" />
-                <rect x="160" y="78" width="110" height="22" rx="6" fill="#fff" />
-                <rect x="180" y="56" width="20" height="26" rx="5" fill="#123a5e" />
-                <rect x="210" y="56" width="20" height="26" rx="5" fill="#1597a5" />
-                <g fill="#bfe1ec">
-                  <circle cx="120" cy="155" r="5" /><circle cx="145" cy="155" r="5" />
-                  <circle cx="170" cy="155" r="5" /><circle cx="195" cy="155" r="5" />
-                </g>
-                <text x="215" y="195" textAnchor="middle" fontFamily="sans-serif" fontWeight="900" fontSize="15" fill="#123a5e">MSC</text>
-              </svg>
+            {/* Countdown layout */}
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl w-full max-w-xs shadow-xl flex flex-col items-center relative z-20">
+              <span className="text-[10px] font-bold text-slate-300 tracking-wider mb-2.5">距離啟航出發倒數 ⏰</span>
+              <div className="grid grid-cols-4 gap-2 w-full">
+                <div className="bg-white/10 border border-white/10 p-2 rounded-2xl text-center">
+                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">{countdown.d}</span>
+                  <span className="block text-[9px] font-bold text-sky-200 mt-0.5">天</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2 rounded-2xl text-center">
+                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">{countdown.h}</span>
+                  <span className="block text-[9px] font-bold text-sky-200 mt-0.5">時</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2 rounded-2xl text-center">
+                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">{countdown.m}</span>
+                  <span className="block text-[9px] font-bold text-sky-200 mt-0.5">分</span>
+                </div>
+                <div className="bg-white/10 border border-white/10 p-2 rounded-2xl text-center">
+                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">{countdown.s}</span>
+                  <span className="block text-[9px] font-bold text-sky-200 mt-0.5">秒</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -784,39 +944,76 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: DINING ===== */}
-      <section id="dining" className="bg-slate-100/50 border-t border-slate-200 py-16 px-4 scroll-mt-20">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 flex items-center justify-center gap-1.5">
-              <span className="w-6 h-0.5 bg-indigo-500 rounded"></span> Dining 船上餐食
+      <section id="dining" className="bg-[#f0f9fb]/50 border-t border-sky-100/50 py-12 px-4 scroll-mt-20">
+        <div className="max-w-xl mx-auto space-y-6">
+          <div className="text-center space-y-1.5">
+            <span className="text-xs font-black uppercase tracking-widest text-[#00bdd6] flex items-center justify-center gap-1.5">
+              <span className="w-5 h-0.5 bg-[#00bdd6] rounded"></span> Dining 船上餐食
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tight">吃這件事，船上全包 🍽️</h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-bold">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">吃這件事，船上全包 🍽️</h2>
+            <p className="text-slate-500 text-xs font-bold leading-relaxed">
               高水準的主餐廳與全日制自助餐廳均免費提供，甚至會驚喜遇見免費龍蝦之夜喔！
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-              <div className="text-3xl">🆓</div>
-              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
-                免費餐廳 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">免加錢</span>
-              </h3>
-              <p className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed">
-                <b>15樓自助餐廳 (Marketplace)</b>：幾乎全天開放，有多國美食、美式燒烤與披薩，也是全船唯一提供免費飲水與咖啡、茶包的取水處。<br />
-                <b>主餐廳 (櫻桃/海王/燈塔等)</b>：精緻三道式西餐，晚餐有固定桌號與時段。
-              </p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-              <div className="text-3xl">⭐</div>
-              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
-                付費特色餐廳 <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">自選</span>
-              </h3>
-              <p className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed">
-                想品嚐頂級美味可自費前往：<b>海渡壽司吧、美式牛排、鐵板燒、墨西哥小吃</b>與義式頂級巧克力 Gelato 吧。<br />
-                💡 <b>建議</b>：一上船就先在 App 或平板預約好，晚餐時段主餐廳經常客滿。自備保溫水壺至 15 樓裝水最方便！
-              </p>
-            </div>
+          {/* Dining Tabs */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl max-w-sm mx-auto">
+            <button
+              onClick={() => setDiningTab('free')}
+              className={`flex-1 text-xs py-2.5 rounded-xl font-extrabold transition-all cursor-pointer ${
+                diningTab === 'free' ? 'bg-[#00bdd6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              🆓 免費餐廳
+            </button>
+            <button
+              onClick={() => setDiningTab('paid')}
+              className={`flex-1 text-xs py-2.5 rounded-xl font-extrabold transition-all cursor-pointer ${
+                diningTab === 'paid' ? 'bg-[#00bdd6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              ⭐ 付費特色餐廳
+            </button>
+          </div>
+
+          <div className="transition-all duration-300">
+            {diningTab === 'free' ? (
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🆓</span>
+                  <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">免加錢 · 全船全包</span>
+                </div>
+                <h3 className="text-base font-black text-slate-800">
+                  豐富免費餐廳任你吃
+                </h3>
+                <div className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed space-y-2">
+                  <p>
+                    <b>15 樓自助餐廳 (Marketplace)</b>：幾乎 20 小時全天開放，有多國美食、美式燒烤、手工現烤披薩與沙拉吧。這也是全船唯一免費提供飲水機、冷熱咖啡與茶包的無限取水處。
+                  </p>
+                  <p>
+                    <b>主餐廳 (櫻桃/海王/燈塔等)</b>：精緻的三道式歐陸與亞洲西餐，每晚提供不同的主廚推薦菜色（晚餐時間有固定桌號與時段）。
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⭐</span>
+                  <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">精緻饕客自選項目</span>
+                </div>
+                <h3 className="text-base font-black text-slate-800">
+                  頂級付費特色餐廳
+                </h3>
+                <div className="text-slate-500 text-xs sm:text-sm font-bold leading-relaxed space-y-2">
+                  <p>
+                    想品嚐大師級的美味，可另外自費預訂：<b>海渡壽司吧、美式牛排館 (Butcher's Cut)、極致鐵板燒、墨西哥小吃</b>，以及義式頂級巧克力 Gelato 冰淇淋吧。
+                  </p>
+                  <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-xl border border-amber-100 mt-2">
+                    💡 <b>達人建議</b>：一上船連接船上 Wi-Fi 後，立即使用 MSC For Me App 預訂特色餐廳。另外，主餐廳經常客滿，自備保溫水壺至 15 樓裝水回房最省事方便！
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1469,18 +1666,18 @@ export default function App() {
       </section>
 
       {/* ===== SECTION: DISCUSSION FORUM (THE MAIN CORE BLOCK) ===== */}
-      <section id="discuss" className="bg-indigo-950 text-white py-16 px-4 border-t border-slate-800 scroll-mt-20">
+      <section id="discuss" className="bg-[#f0f9fb] text-slate-800 py-16 px-4 border-t border-slate-100 scroll-mt-20">
         <div className="max-w-6xl mx-auto space-y-8">
-          <div className="bg-gradient-to-r from-indigo-900 to-indigo-850 rounded-3xl p-6 sm:p-8 border border-white/10 relative overflow-hidden shadow-2xl">
-            <div className="absolute right-[-10px] bottom-[-20px] text-[130px] opacity-5 select-none pointer-events-none">🗺️</div>
+          <div className="bg-gradient-to-r from-[#00bdd6] to-[#2ac2c9] rounded-3xl p-6 sm:p-8 border border-cyan-400/20 relative overflow-hidden shadow-xl text-white">
+            <div className="absolute right-[-10px] bottom-[-20px] text-[130px] opacity-10 select-none pointer-events-none">🗺️</div>
             
             <div className="max-w-2xl space-y-4 relative z-10">
-              <span className="inline-flex items-center gap-1 bg-amber-400 text-slate-900 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1 bg-amber-300 text-slate-950 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
                 ⭐ 多人協同自由行規劃區
               </span>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-none text-white">佐世保 & 釜山 自由行討論區</h2>
-              <p className="text-slate-300 text-xs sm:text-sm font-bold leading-relaxed">
-                兩天靠港是我們朋友的自由放風時間！點進來，輸入彼此的暱稱。推薦你找到的美食與好玩地標、上傳景點相片，大家可以互相投票，最終直接納入右側一鍵排定完美登陸日程！
+              <p className="text-white/90 text-xs sm:text-sm font-bold leading-relaxed">
+                兩天靠港是我們朋友的自由放風時間！點進來，輸入彼此的暱稱。推薦你找到的美食與好玩地標、上傳景點相片，大家可以互相投票，最終直接一鍵排定完美登陸日程！
               </p>
 
               {/* Login / Name Gate */}
@@ -1680,12 +1877,12 @@ export default function App() {
                     {uploadedBase64s.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto py-2 pr-1 mt-2 scrollbar-thin">
                         {uploadedBase64s.map((img, idx) => (
-                          <div key={idx} className="relative h-14 w-18 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                          <div key={idx} className="relative h-24 w-32 flex-none rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
                             <img src={img} alt="Uploaded" className="h-full w-full object-cover" />
                             <button
                               type="button"
                               onClick={() => removeUploadedImage(idx)}
-                              className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4.5 w-4.5 rounded-full flex items-center justify-center text-[10px] text-white"
+                              className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 h-6 w-6 rounded-full flex items-center justify-center text-xs text-white"
                             >
                               ✕
                             </button>
@@ -1750,11 +1947,10 @@ export default function App() {
                             {isAuthor && !isEditing && (
                               <button
                                 onClick={() => {
-                                  if (confirm('確定要刪除此推薦景點嗎？')) {
-                                    deleteSpot(discPort, spot.id);
-                                  }
+                                  setSpotToDelete({ port: discPort, id: spot.id, name: spot.name });
+                                  setDeleteConfirmOpen(true);
                                 }}
-                                className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
+                                className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                                 title="刪除推薦"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -1781,15 +1977,20 @@ export default function App() {
                             {/* Carousel of uploaded images (if any) */}
                             {spot.images && spot.images.length > 0 && (
                               <div className="my-3 relative group">
-                                <div className="flex gap-1.5 overflow-x-auto scroll-snap-x snap-mandatory py-1 scrollbar-none rounded-xl h-28 max-w-full">
+                                <div className="flex gap-2 overflow-x-auto scroll-snap-x snap-mandatory py-1 scrollbar-none rounded-2xl h-48 sm:h-56 max-w-full">
                                   {spot.images.map((img, i) => (
-                                    <div key={i} className="h-full w-full flex-none snap-start rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                                    <div 
+                                      key={i} 
+                                      onClick={() => setLightboxImage(img)}
+                                      className="h-full w-full flex-none snap-start rounded-2xl overflow-hidden shadow-sm border border-slate-100 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all"
+                                      title="點擊放大檢視"
+                                    >
                                       <img src={img} alt="Spot carousel" className="h-full w-full object-cover" />
                                     </div>
                                   ))}
                                 </div>
-                                <span className="absolute bottom-1 right-2 bg-slate-900/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-extrabold text-white">
-                                  ↔ 左右滑輪播 ({spot.images.length})
+                                <span className="absolute bottom-2 right-2 bg-slate-900/70 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-extrabold text-white">
+                                  ↔ 左右滑輪播 ({spot.images.length}) · 點擊放大 🔍
                                 </span>
                               </div>
                             )}
@@ -1842,14 +2043,14 @@ export default function App() {
                                   </div>
 
                                   {editingSpotImages.length > 0 && (
-                                    <div className="flex gap-1.5 overflow-x-auto py-1 pr-1 scrollbar-thin max-w-full">
+                                    <div className="flex gap-2 overflow-x-auto py-1 pr-1 scrollbar-thin max-w-full">
                                       {editingSpotImages.map((img, idx) => (
-                                        <div key={idx} className="relative h-10 w-14 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                                        <div key={idx} className="relative h-20 w-28 flex-none rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
                                           <img src={img} alt="Editing spot" className="h-full w-full object-cover" />
                                           <button
                                             type="button"
                                             onClick={() => removeEditingSpotImage(idx)}
-                                            className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4 w-4 rounded-full flex items-center justify-center text-[8px] text-white"
+                                            className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 h-6 w-6 rounded-full flex items-center justify-center text-xs text-white"
                                           >
                                             ✕
                                           </button>
@@ -2014,6 +2215,180 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* ===== FLOATING UTILITY BUTTONS (KKday Style Cute Buttons!) ===== */}
+      {showFloat && (() => {
+        const sectionsList = [
+          { id: 'overview', label: '🚢 郵輪與日程' },
+          { id: 'cost', label: '📋 自費與回條' },
+          { id: 'discuss', label: '💬 景點討論區' },
+          { id: 'itinerary-plan', label: '⏰ 時間路線規劃' },
+          { id: 'shopping-list', label: '🛒 採購與筆記' }
+        ];
+
+        const currentSection = sectionsList.find(s => s.id === activeSection) || sectionsList[0];
+
+        return (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 items-end">
+            {/* Expanded Fast-Travel Navigation Menu */}
+            {isFloatMenuOpen && (
+              <div className="bg-white shadow-2xl border border-sky-100/90 rounded-3xl p-3 flex flex-col gap-1 min-w-[190px] mb-1.5 animate-scaleUp">
+                <div className="text-[10px] font-black text-slate-400 px-2.5 pb-1.5 border-b border-slate-100 flex items-center justify-between">
+                  <span>快速跳航導航 ⚓</span>
+                  <button 
+                    onClick={() => setIsFloatMenuOpen(false)}
+                    className="text-slate-400 hover:text-rose-500 font-extrabold text-xs cursor-pointer p-0.5"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 mt-1">
+                  {sectionsList.map((sec) => {
+                    const isActive = sec.id === activeSection;
+                    return (
+                      <button
+                        key={sec.id}
+                        onClick={() => {
+                          scrollToSection(sec.id);
+                          setIsFloatMenuOpen(false);
+                        }}
+                        className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-2xl transition-all flex items-center justify-between cursor-pointer ${
+                          isActive
+                            ? 'bg-indigo-50 text-indigo-700 font-extrabold'
+                            : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span>{sec.label}</span>
+                        {isActive && <span className="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-md font-black">目前</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Main Action Button: Immediately scrolls back to the top of the currently active section */}
+            <button
+              onClick={() => {
+                scrollToSection(activeSection);
+                setIsFloatMenuOpen(false);
+              }}
+              className="flex items-center gap-1.5 bg-[#00bdd6] hover:bg-[#00a8c0] active:scale-95 text-white font-extrabold text-xs px-4.5 py-3.5 rounded-full shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 cursor-pointer border border-cyan-400/20 group"
+              title={`點擊快速回到「${
+                activeSection === 'overview' ? '郵輪與日程' :
+                activeSection === 'cost' ? '自費與回條' :
+                activeSection === 'discuss' ? '景點討論區' :
+                activeSection === 'itinerary-plan' ? '時間路線規劃' :
+                activeSection === 'shopping-list' ? '採購與筆記' : '郵輪與日程'
+              }」的最上方`}
+            >
+              <span>{
+                activeSection === 'overview' ? '郵輪與日程' :
+                activeSection === 'cost' ? '自費與回條' :
+                activeSection === 'discuss' ? '景點討論區' :
+                activeSection === 'itinerary-plan' ? '時間路線規劃' :
+                activeSection === 'shopping-list' ? '採購與筆記' : '郵輪與日程'
+              }</span>
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-black group-hover:translate-y-[-2px] transition-transform">⭡</span>
+            </button>
+            
+            {/* Horizontal row of auxiliary utilities */}
+            <div className="flex gap-2">
+              {/* Quick Jump Anchor Menu Toggle */}
+              <button
+                onClick={() => setIsFloatMenuOpen(!isFloatMenuOpen)}
+                className={`flex items-center justify-center w-11 h-11 rounded-full shadow-lg transition-all hover:-translate-y-0.5 cursor-pointer active:scale-95 ${
+                  isFloatMenuOpen 
+                    ? 'bg-indigo-600 border border-indigo-500 text-white shadow-indigo-500/20' 
+                    : 'bg-white hover:bg-sky-50 text-[#00bdd6] border border-sky-100 shadow-cyan-500/10'
+                }`}
+                title="快速跳航選單"
+              >
+                <span className="text-base font-bold">⚓</span>
+              </button>
+
+              {/* Scroll back to TOP Button */}
+              <button
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setIsFloatMenuOpen(false);
+                }}
+                className="flex items-center justify-center w-11 h-11 bg-white hover:bg-sky-50 active:scale-95 text-[#00bdd6] border border-sky-100 rounded-full shadow-lg shadow-cyan-500/10 transition-all hover:-translate-y-0.5 cursor-pointer group"
+                title="回到最上面"
+              >
+                <div className="flex flex-col items-center justify-center">
+                  <MiniShip className="h-4 w-5 text-[#00bdd6] group-hover:animate-bounce" />
+                  <span className="text-[7px] font-black tracking-tighter leading-none mt-0.5">TOP</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ===== CUSTOM DELETE CONFIRMATION MODAL (Reliable inside iFrame!) ===== */}
+      {deleteConfirmOpen && spotToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 space-y-4 animate-scaleUp">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 text-xl font-bold">
+                ⚠️
+              </div>
+              <h3 className="text-base font-black text-slate-800">
+                確定要刪除此行程嗎？
+              </h3>
+              <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                確定要刪除討論區推薦的景點 <br />
+                <span className="text-rose-600 font-extrabold">「{spotToDelete.name}」</span> 嗎？
+              </p>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setSpotToDelete(null);
+                }}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition-all cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  deleteSpot(spotToDelete.port, spotToDelete.id);
+                  setDeleteConfirmOpen(false);
+                  setSpotToDelete(null);
+                }}
+                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs py-3 rounded-2xl shadow-lg shadow-rose-500/10 transition-all cursor-pointer"
+              >
+                是，確定刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== GLOBAL LIGHTBOX FOR APP IMAGES ===== */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl p-2" onClick={e => e.stopPropagation()}>
+            <img src={lightboxImage} alt="Reference Fullscreen" className="max-w-full max-h-[80vh] object-contain rounded-xl" />
+            <button 
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 bg-slate-900/80 hover:bg-rose-600 text-white p-2.5 rounded-full transition-all cursor-pointer"
+              title="關閉"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="p-3 text-center text-xs font-black text-slate-500">
+              📌 點擊任何地方或右上角關閉
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

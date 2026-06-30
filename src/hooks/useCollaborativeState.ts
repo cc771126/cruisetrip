@@ -378,7 +378,12 @@ export function useCollaborativeState() {
 
   const deleteSpot = async (port: 'saseho' | 'busan', spotId: string) => {
     const currentSpots = port === 'saseho' ? spotsSaseho : spotsBusan;
-    const updated = currentSpots.filter((s) => s.id !== spotId);
+    const updated = currentSpots.map((s) => {
+      if (s.id === spotId) {
+        return { ...s, deleted: true };
+      }
+      return s;
+    });
 
     if (port === 'saseho') {
       setSpotsSaseho(updated);
@@ -532,8 +537,8 @@ export function useCollaborativeState() {
 
   return {
     me,
-    spotsSaseho,
-    spotsBusan,
+    spotsSaseho: spotsSaseho.filter(s => !s.deleted),
+    spotsBusan: spotsBusan.filter(s => !s.deleted),
     expenses,
     memos,
     wishlist,

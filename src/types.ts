@@ -16,6 +16,8 @@ export interface Spot {
   created: number;
   images?: string[]; // Array of base64 compressed images
   selectedInItinerary?: boolean;
+  selectedAt?: number; // Order sequence of checking
+  deleted?: boolean; // Deletion flag to prevent default spot re-merging
 }
 
 export interface Expense {

@@ -171,10 +171,10 @@ export default function ShoppingSection({
         </div>
 
         {/* Right column: our separated wishlist */}
-        <div className="lg:col-span-7 flex flex-col justify-between h-[400px] gap-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+        <div className="lg:col-span-7 flex flex-col justify-between lg:h-[400px] h-auto gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:flex-1 lg:min-h-0 min-h-[300px]">
             {/* Column 1: Erin's List */}
-            <div className="flex flex-col bg-[#fef8fa]/80 border border-rose-100 rounded-2xl p-3.5 h-full">
+            <div className="flex flex-col bg-[#fef8fa]/80 border border-rose-100 rounded-2xl p-3.5 min-h-[220px] lg:h-full">
               <div className="flex items-center justify-between border-b border-rose-100/50 pb-2 mb-2">
                 <span className="text-xs font-black text-rose-700 flex items-center gap-1">
                   🌸 Erin 的採購清單
@@ -197,7 +197,7 @@ export default function ShoppingSection({
             </div>
 
             {/* Column 2: Rebecca's List */}
-            <div className="flex flex-col bg-[#f0f9ff]/80 border border-sky-100 rounded-2xl p-3.5 h-full">
+            <div className="flex flex-col bg-[#f0f9ff]/80 border border-sky-100 rounded-2xl p-3.5 min-h-[220px] lg:h-full">
               <div className="flex items-center justify-between border-b border-sky-100/50 pb-2 mb-2">
                 <span className="text-xs font-black text-sky-700 flex items-center gap-1">
                   🎀 Rebecca 的採購清單

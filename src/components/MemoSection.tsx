@@ -42,8 +42,8 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
           img.src = event.target?.result as string;
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 500;
-            const MAX_HEIGHT = 400;
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1200;
             let width = img.width;
             let height = img.height;
 
@@ -63,7 +63,7 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
             resolve(dataUrl);
           };
           img.onerror = (err) => reject(err);
@@ -187,14 +187,14 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
                       </div>
 
                       {editingImages.length > 0 && (
-                        <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-thin">
+                        <div className="flex gap-2 overflow-x-auto py-1 scrollbar-thin">
                           {editingImages.map((img, idx) => (
-                            <div key={idx} className="relative h-12 w-16 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                            <div key={idx} className="relative h-24 w-32 flex-none rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                               <img src={img} alt="Editing" className="h-full w-full object-cover" />
                               <button
                                 type="button"
                                 onClick={() => removeImage(idx, true)}
-                                className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4.5 w-4.5 rounded-full flex items-center justify-center text-[10px] text-white"
+                                className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 h-6 w-6 rounded-full flex items-center justify-center text-xs text-white"
                               >
                                 ✕
                               </button>
@@ -229,12 +229,12 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
 
                     {/* Render uploaded image thumbnails */}
                     {m.images && m.images.length > 0 && (
-                      <div className="flex gap-1.5 overflow-x-auto py-2 mt-2 scrollbar-thin">
+                      <div className="flex gap-2 overflow-x-auto py-2 mt-2 scrollbar-thin">
                         {m.images.map((img, idx) => (
                           <div 
                             key={idx} 
                             onClick={() => setSelectedLightboxImage(img)}
-                            className="relative h-14 w-20 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm cursor-pointer hover:border-indigo-400 hover:scale-[1.02] transition-all"
+                            className="relative h-24 w-32 flex-none rounded-xl border border-slate-200 overflow-hidden shadow-sm cursor-pointer hover:border-indigo-400 hover:scale-[1.02] transition-all"
                             title="點擊放大檢視"
                           >
                             <img src={img} alt="Ticket stub" className="h-full w-full object-cover" />
@@ -317,12 +317,12 @@ export default function MemoSection({ memos, meName, addMemo, deleteMemo, update
             {newMemoImages.length > 0 && (
               <div className="flex gap-2 overflow-x-auto py-2 pr-1 mt-2 scrollbar-thin">
                 {newMemoImages.map((img, idx) => (
-                  <div key={idx} className="relative h-14 w-20 flex-none rounded-lg border border-slate-200 overflow-hidden shadow-sm bg-white">
+                  <div key={idx} className="relative h-24 w-32 flex-none rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
                     <img src={img} alt="Uploaded stub" className="h-full w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeImage(idx, false)}
-                      className="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-rose-600 h-4.5 w-4.5 rounded-full flex items-center justify-center text-[10px] text-white"
+                      className="absolute top-1 right-1 bg-slate-900/80 hover:bg-rose-600 h-6 w-6 rounded-full flex items-center justify-center text-xs text-white"
                     >
                       ✕
                     </button>

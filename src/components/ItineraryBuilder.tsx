@@ -19,7 +19,9 @@ export default function ItineraryBuilder({ spotsSaseho, spotsBusan, updateSpot }
   const [transitTime, setTransitTime] = useState<number>(30); // default 30 mins transit
 
   const currentSpots = activePort === 'saseho' ? spotsSaseho : spotsBusan;
-  const selectedSpots = currentSpots.filter(s => s.selectedInItinerary);
+  const selectedSpots = currentSpots
+    .filter(s => s.selectedInItinerary)
+    .sort((a, b) => (a.selectedAt || 0) - (b.selectedAt || 0));
 
   // Port config
   const portConfig = {
@@ -45,8 +47,10 @@ export default function ItineraryBuilder({ spotsSaseho, spotsBusan, updateSpot }
 
   // Toggle selection
   const handleToggleSelect = async (spot: Spot) => {
+    const nextSelected = !spot.selectedInItinerary;
     await updateSpot(activePort, spot.id, {
-      selectedInItinerary: !spot.selectedInItinerary
+      selectedInItinerary: nextSelected,
+      selectedAt: nextSelected ? Date.now() : undefined
     });
   };
 
